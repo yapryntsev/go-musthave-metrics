@@ -14,7 +14,7 @@ const (
     CounterMetricName  = `counter`
 )
 
-var MetricTypeMismatch = errors.New(`metric with the same name but a different type already exists`)
+var ErrMetricTypeMismatch = errors.New(`metric with the same name but a different type already exists`)
 
 type IMetricService interface {
     UpdateCounter(name string, value int64) error
@@ -49,7 +49,7 @@ func (s *metricService) UpdateCounter(name string, value int64) error {
     }
 
     if metric.TypeName != CounterMetricName {
-        return MetricTypeMismatch
+        return ErrMetricTypeMismatch
     }
 
     metric.Value += float64(value)

@@ -50,7 +50,7 @@ func (h MetricHandler) updateGauge(w http.ResponseWriter, r *http.Request) {
 
     err = h.service.UpdateGauge(name, value)
     if err != nil {
-        if errors.Is(err, service.MetricTypeMismatch) {
+        if errors.Is(err, service.ErrMetricTypeMismatch) {
             w.WriteHeader(http.StatusBadRequest)
         } else {
             w.WriteHeader(http.StatusInternalServerError)
@@ -83,7 +83,7 @@ func (h MetricHandler) updateCounter(w http.ResponseWriter, r *http.Request) {
 
     err = h.service.UpdateCounter(name, int64(value))
     if err != nil {
-        if errors.Is(err, service.MetricTypeMismatch) {
+        if errors.Is(err, service.ErrMetricTypeMismatch) {
             w.WriteHeader(http.StatusBadRequest)
         } else {
             w.WriteHeader(http.StatusInternalServerError)

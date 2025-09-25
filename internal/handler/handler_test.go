@@ -36,6 +36,8 @@ func Test_GaugeHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
 
                 // Then
                 res := w.Result()
+                defer res.Body.Close()
+
                 assert.Equal(t, res.StatusCode, http.StatusMethodNotAllowed)
             },
         )
@@ -67,6 +69,8 @@ func Test_CounterHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
 
                 // Then
                 res := w.Result()
+                defer res.Body.Close()
+
                 assert.Equal(t, res.StatusCode, http.StatusMethodNotAllowed)
             },
         )
@@ -103,6 +107,8 @@ func Test_GaugeHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
 
                 // Then
                 res := w.Result()
+                defer res.Body.Close()
+
                 assert.Equal(t, res.StatusCode, http.StatusNotFound)
             },
         )
@@ -139,6 +145,8 @@ func Test_CounterHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
 
                 // Then
                 res := w.Result()
+                defer res.Body.Close()
+
                 assert.Equal(t, res.StatusCode, http.StatusNotFound)
             },
         )
@@ -159,6 +167,8 @@ func Test_GaugeHandler_NonFloatValue_ThrowsBadRequest(t *testing.T) {
 
     // Then
     res := w.Result()
+    defer res.Body.Close()
+
     assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 }
 
@@ -176,6 +186,8 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
 
     // Then
     res := w.Result()
+    defer res.Body.Close()
+
     assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 }
 

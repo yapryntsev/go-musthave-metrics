@@ -102,11 +102,15 @@ func (a *Agent) sendMetric(t string, name string, value string) error {
         return errors.New("host must be configured")
     }
 
-    _, err := http.Post(
+    resp, err := http.Post(
         fmt.Sprintf(`http://%s/update/%s/%s/%s`, a.host, t, name, value),
         "text/plain",
         nil,
     )
+    if resp != nil {
+        defer resp.Body.Close()
+    }
+
     a.log.Printf(`metric sent. type: %s, name: %s, value: %s`, t, name, value)
 
     return err

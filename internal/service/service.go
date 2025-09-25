@@ -63,6 +63,11 @@ func (s *MetricService) UpdateCounter(name string, value int64) error {
 
 func (s *MetricService) UpdateGauge(name string, value float64) error {
     oldMetric, err := s.repo.Get(name)
+    if err != nil {
+        s.log.Printf("failed to read gauge metric: %s", err.Error())
+        return err
+    }
+
     newMetric := &repository.Metric{
         MetricName: name,
         TypeName:   GaugeMetricTypeName,

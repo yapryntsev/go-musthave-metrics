@@ -2,7 +2,6 @@ package handler
 
 import (
     "errors"
-    "fmt"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "log"
     "net/http"

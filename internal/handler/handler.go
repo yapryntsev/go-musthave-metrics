@@ -2,6 +2,7 @@ package handler
 
 import (
     "errors"
+    "fmt"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "log"
     "net/http"
@@ -19,9 +20,9 @@ func New(service service.IMetricService, log *log.Logger,) MetricHandler {
 
 func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
     switch r.PathValue(service.MetricTypePathKey) {
-    case service.GaugeMetricName:
+    case service.GaugeMetricTypeName:
         h.updateGauge(w, r)
-    case service.CounterMetricName:
+    case service.CounterMetricTypeName:
         h.updateCounter(w, r)
     default:
         w.WriteHeader(http.StatusBadRequest)

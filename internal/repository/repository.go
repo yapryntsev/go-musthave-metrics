@@ -10,14 +10,3 @@ type IMetricRepository interface {
     Get(name string) (*Metric, error)
     Set(metric *Metric) error
 }
-
-func New() IMetricRepository {
-    return &inMemoryRepository{
-        storage: make(
-            map[string]struct {
-                typeName string
-            value    float64
-            },
-        ),
-    }
-}

@@ -54,7 +54,7 @@ func (s *MetricService) GetAll() (map[string]string, error) {
     }
 
     for n, v := range floatMetrics {
-        res[n] = fmt.Sprintf(`%.2f`, v)
+        res[n] = fmt.Sprintf(`%.3f`, v)
     }
 
     return res, nil
@@ -75,14 +75,12 @@ func (s *MetricService) Get(metricType string, name string) (string, error) {
         var v float64
         v, err = s.repo.GetFloat(name)
         if err == nil {
-            res = fmt.Sprintf(`%.2f`, v)
+            res = fmt.Sprintf(`%.3f`, v)
         }
     }
 
-    if err != nil {
-        if !errors.Is(err, repository.ErrValueNotFound) {
-            s.log.Printf("failed to fetch counter metric: %s", err.Error())
-        }
+    if err != nil && !errors.Is(err, repository.ErrValueNotFound) {
+        s.log.Printf("failed to fetch counter metric: %s", err.Error())
         return ``, err
     }
 

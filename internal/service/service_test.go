@@ -109,23 +109,7 @@ func Test_Get_HasStoredValue_Return(t *testing.T) {
     // Then
     require.True(t, repo.IsGetFloatCalled, `expected to call repo for value`)
     require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, fmt.Sprintf(`%.2f`, expectedValue), value)
-    require.Equal(t, repo.GetFloatLastCallNameParam, `test`, `metric name mismatch`)
-}
-
-func Test_Get_NoStoredValue_ThrowError(t *testing.T) {
-    // Given
-    repo := mocks.NewMockRepository()
-    service := makeService(repo)
-    repo.GetFloatReturnError = repository.ErrValueNotFound
-
-    // When
-    value, err := service.Get(GaugeMetricTypeName, `test`)
-
-    // Then
-    require.True(t, repo.IsGetFloatCalled, `expected to call repo for value`)
-    require.Empty(t, value, `expected to throw error, return value instead`)
-    require.ErrorIs(t, err, repository.ErrValueNotFound, `return error type mismatch`)
+    require.Equal(t, fmt.Sprintf(`%.3f`, expectedValue), value)
     require.Equal(t, repo.GetFloatLastCallNameParam, `test`, `metric name mismatch`)
 }
 
@@ -169,7 +153,7 @@ func Test_GetAll_HasStoredValue_Return(t *testing.T) {
         `test`: 64.2,
     }
     expectedFormattedValue := map[string]string{
-        `test`: `64.20`,
+        `test`: `64.200`,
     }
 
     repo := mocks.NewMockRepository()

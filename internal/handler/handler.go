@@ -68,7 +68,18 @@ func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
     w.Write([]byte(res))
 }
 
-func (h MetricHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
+func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
+    switch r.PathValue(service.MetricTypePathKey) {
+    case service.GaugeMetricTypeName:
+        h.updateGauge(w, r)
+    case service.CounterMetricTypeName:
+        h.updateCounter(w, r)
+    default:
+        w.WriteHeader(http.StatusBadRequest)
+    }
+}
+
+func (h MetricHandler) updateGauge(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
@@ -97,7 +108,7 @@ func (h MetricHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
 }
 
-func (h MetricHandler) UpdateCounter(w http.ResponseWriter, r *http.Request) {
+func (h MetricHandler) updateCounter(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return

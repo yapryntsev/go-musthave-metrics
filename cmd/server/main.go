@@ -30,32 +30,17 @@ func run(port int) error {
     r := chi.NewRouter()
     r.Use(middleware.Timeout(5 * time.Second))
 
-    r.Route(
-        `/update`, func(r chi.Router) {
-            metricTypes := [...]struct {
-                name    string
-                handler http.HandlerFunc
-            }{
-                {service.CounterMetricTypeName, metricHandler.UpdateCounter},
-                {service.GaugeMetricTypeName, metricHandler.UpdateGauge},
-            }
-
-            for _, t := range metricTypes {
-                endpoint := fmt.Sprintf(
-                    `/%s/{%s}/{%s}`,
-                    t.name,
-                    service.MetricNamePathKey,
-                    service.MetricValuePathKey,
-                )
-
-                r.Post(endpoint, t.handler)
-            }
-        },
+    getValueEndpoint := fmt.Sprintf(`/value/{%s}/{%s}`, service.MetricTypePathKey, service.MetricNamePathKey)
+    updateValueEndpoint := fmt.Sprintf(
+        `/update/{%s}/{%s}/{%s}`,
+        service.MetricTypePathKey,
+        service.MetricNamePathKey,
+        service.MetricValuePathKey,
     )
 
-    getValueEndpoint := fmt.Sprintf(`/value/{%s}/{%s}`, service.MetricTypePathKey, service.MetricNamePathKey)
-    r.Get(getValueEndpoint, metricHandler.GetValue)
     r.Get(`/`, metricHandler.GetAll)
+    r.Get(getValueEndpoint, metricHandler.GetValue)
+    r.Post(updateValueEndpoint, metricHandler.Update)
 
     appLog.Println(`handler registered`)
 

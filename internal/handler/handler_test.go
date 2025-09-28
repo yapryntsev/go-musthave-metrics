@@ -35,7 +35,7 @@ func Test_GaugeHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.UpdateGauge(w, r)
+                handler.updateGauge(w, r)
 
                 // Then
                 res := w.Result()
@@ -68,7 +68,7 @@ func Test_CounterHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.UpdateCounter(w, r)
+                handler.updateCounter(w, r)
 
                 // Then
                 res := w.Result()
@@ -106,7 +106,7 @@ func Test_GaugeHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.UpdateGauge(w, r)
+                handler.updateGauge(w, r)
 
                 // Then
                 res := w.Result()
@@ -144,7 +144,7 @@ func Test_CounterHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.UpdateCounter(w, r)
+                handler.updateCounter(w, r)
 
                 // Then
                 res := w.Result()
@@ -166,7 +166,7 @@ func Test_GaugeHandler_NonFloatValue_ThrowsBadRequest(t *testing.T) {
 
     // When
     handler := makeHandler(mocks.NewServiceMock())
-    handler.UpdateGauge(w, r)
+    handler.updateGauge(w, r)
 
     // Then
     res := w.Result()
@@ -185,7 +185,7 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
 
     // When
     handler := makeHandler(mocks.NewServiceMock())
-    handler.UpdateGauge(w, r)
+    handler.updateGauge(w, r)
 
     // Then
     res := w.Result()

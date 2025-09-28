@@ -2,11 +2,11 @@ package service
 
 import (
     "errors"
-    "fmt"
     "github.com/stretchr/testify/require"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository/mocks"
     "log"
+    "strconv"
     "testing"
 )
 
@@ -109,7 +109,7 @@ func Test_Get_HasStoredValue_Return(t *testing.T) {
     // Then
     require.True(t, repo.IsGetFloatCalled, `expected to call repo for value`)
     require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, fmt.Sprintf(`%.3f`, expectedValue), value)
+    require.Equal(t, strconv.FormatFloat(expectedValue, 'f', -1, 64), value)
     require.Equal(t, repo.GetFloatLastCallNameParam, `test`, `metric name mismatch`)
 }
 

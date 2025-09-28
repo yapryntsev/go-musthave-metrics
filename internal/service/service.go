@@ -75,7 +75,7 @@ func (s *MetricService) Get(metricType string, name string) (string, error) {
         var v float64
         v, err = s.repo.GetFloat(name)
         if err == nil {
-            res = fmt.Sprintf(`%.3f`, v)
+            res = strconv.FormatFloat(v, 'f', -1, 64)
         }
     }
 

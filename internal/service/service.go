@@ -2,8 +2,10 @@ package service
 
 import (
     "errors"
+    "fmt"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "log"
+    "strconv"
 )
 
 const (
@@ -14,9 +16,9 @@ const (
     CounterMetricTypeName = `counter`
 )
 
-var ErrMetricTypeMismatch = errors.New(`metric with the same name but a different type already exists`)
-
 type IMetricService interface {
+    GetAll() (map[string]string, error)
+    Get(metricType string, name string) (string, error)
     UpdateCounter(name string, value int64) error
     UpdateGauge(name string, value float64) error
 }
@@ -33,26 +35,69 @@ func New(repo repository.IMetricRepository, log *log.Logger) *MetricService {
     }
 }
 
-func (s *MetricService) UpdateCounter(name string, value int64) error {
-    metric, err := s.repo.Get(name)
+func (s *MetricService) GetAll() (map[string]string, error) {
+    var err error
+    res := make(map[string]string)
+
+    intMetrics, err := s.repo.GetAllInt()
     if err != nil {
+        return nil, err
+    }
+
+    for n, v := range intMetrics {
+        res[n] = strconv.Itoa(int(v))
+    }
+
+    floatMetrics, err := s.repo.GetAllFloat()
+    if err != nil {
+        return nil, err
+    }
+
+    for n, v := range floatMetrics {
+        res[n] = fmt.Sprintf(`%.2f`, v)
+    }
+
+    return res, nil
+}
+
+func (s *MetricService) Get(metricType string, name string) (string, error) {
+    var res string
+    var err error
+
+    switch metricType {
+    case CounterMetricTypeName:
+        var v int64
+        v, err = s.repo.GetInt(name)
+        if err == nil {
+            res = strconv.Itoa(int(v))
+        }
+    case GaugeMetricTypeName:
+        var v float64
+        v, err = s.repo.GetFloat(name)
+        if err == nil {
+            res = fmt.Sprintf(`%.2f`, v)
+        }
+    }
+
+    if err != nil {
+        if !errors.Is(err, repository.ErrValueNotFound) {
+            s.log.Printf("failed to fetch counter metric: %s", err.Error())
+        }
+        return ``, err
+    }
+
+    return res, nil
+}
+
+func (s *MetricService) UpdateCounter(name string, value int64) error {
+    metric, err := s.repo.GetInt(name)
+    if err != nil && !errors.Is(err, repository.ErrValueNotFound) {
         s.log.Printf("failed to fetch counter metric: %s", err.Error())
         return err
     }
 
-    if metric == nil {
-        metric = &repository.Metric{
-            MetricName: name,
-            TypeName:   CounterMetricTypeName,
-        }
-    }
-
-    if metric.TypeName != CounterMetricTypeName {
-        return ErrMetricTypeMismatch
-    }
-
-    metric.Value += float64(value)
-    err = s.repo.Set(metric)
+    metric += value
+    err = s.repo.SetInt(name, metric)
     if err != nil {
         s.log.Printf("failed to save counter metric: %s", err.Error())
         return err
@@ -62,23 +107,7 @@ func (s *MetricService) UpdateCounter(name string, value int64) error {
 }
 
 func (s *MetricService) UpdateGauge(name string, value float64) error {
-    oldMetric, err := s.repo.Get(name)
-    if err != nil {
-        s.log.Printf("failed to read gauge metric: %s", err.Error())
-        return err
-    }
-
-    newMetric := &repository.Metric{
-        MetricName: name,
-        TypeName:   GaugeMetricTypeName,
-        Value:      value,
-    }
-
-    if oldMetric != nil && oldMetric.TypeName != GaugeMetricTypeName {
-        return ErrMetricTypeMismatch
-    }
-
-    err = s.repo.Set(newMetric)
+    err := s.repo.SetFloat(name, value)
     if err != nil {
         s.log.Printf("failed to save gauge metric: %s", err.Error())
         return err

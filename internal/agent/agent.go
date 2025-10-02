@@ -12,29 +12,35 @@ import (
 )
 
 type Agent struct {
-    host   string
-    stats  *runtime.MemStats
-    log    *log.Logger
-    client *resty.Client
+    addr           string
+    stats          *runtime.MemStats
+    log            *log.Logger
+    client         *resty.Client
+    reportInterval uint
+    pollInterval   uint
+
     // Metrics
     pollCount int
     randValue float64
 }
 
-func New(host string, port int, log *log.Logger) *Agent {
+func New(addr string, reportInterval uint, pollInterval uint, log *log.Logger) *Agent {
     return &Agent{
-        host:   fmt.Sprintf("%s:%d", host, port),
-        stats:  &runtime.MemStats{},
-        log:    log,
-        client: resty.New(),
+        addr:           addr,
+        stats:          &runtime.MemStats{},
+        log:            log,
+        client:         resty.New(),
+        reportInterval: reportInterval,
+        pollInterval:   pollInterval,
     }
 }
 
 func (a *Agent) StartGathering() error {
     var err error
+    lastReportTime := time.Now()
 
     for {
-        time.Sleep(2 * time.Second)
+        time.Sleep(time.Duration(a.pollInterval) * time.Second)
 
         a.pollCount++
         a.randValue = rand.Float64()
@@ -42,7 +48,7 @@ func (a *Agent) StartGathering() error {
         runtime.ReadMemStats(a.stats)
         a.log.Println("metric collected")
 
-        if a.pollCount%5 == 0 {
+        if time.Now().Sub(lastReportTime).Seconds() >= float64(a.reportInterval) {
             err = a.sendMetrics()
         }
 
@@ -100,13 +106,13 @@ func (a *Agent) sendMetrics() error {
 }
 
 func (a *Agent) sendMetric(t string, name string, value string) error {
-    if len(a.host) == 0 {
+    if len(a.addr) == 0 {
         return errors.New("host must be configured")
     }
 
     _, err := a.client.R().
         SetHeader(`Content-Type`, `text/plain`).
-        Post(fmt.Sprintf(`http://%s/update/%s/%s/%s`, a.host, t, name, value))
+        Post(fmt.Sprintf(`http://%s/update/%s/%s/%s`, a.addr, t, name, value))
 
     a.log.Printf(`metric sent. type: %s, name: %s, value: %s`, t, name, value)
 

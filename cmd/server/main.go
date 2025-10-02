@@ -1,6 +1,7 @@
 package main
 
 import (
+    "flag"
     "fmt"
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
@@ -14,15 +15,23 @@ import (
 )
 
 func main() {
-    if err := run(8080); err != nil {
+    addr := new(string)
+    parseFlags(addr)
+
+    if err := run(*addr); err != nil {
         panic(err)
     }
 }
 
-func run(port int) error {
+func parseFlags(addr *string) {
+    flag.StringVar(addr, `a`, `localhost:8080`, `address and port to run server`)
+    flag.Parse()
+}
+
+func run(addr string) error {
     appLog := newLog(`app`)
 
-    appLog.Printf(`server bootstrap, port :%d`, port)
+    appLog.Printf(`server bootstrap, address: %s`, addr)
     metricRepo := repository.NewInMemoryRepo()
     metricService := service.New(metricRepo, newLog("service"))
     metricHandler := handler.New(metricService, newLog("handler"))
@@ -44,7 +53,7 @@ func run(port int) error {
 
     appLog.Println(`handler registered`)
 
-    return http.ListenAndServe(fmt.Sprintf(`:%d`, port), r)
+    return http.ListenAndServe(addr, r)
 }
 
 func newLog(prefix string) *log.Logger {

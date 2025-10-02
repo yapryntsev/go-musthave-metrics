@@ -48,7 +48,7 @@ func (a *Agent) StartGathering() error {
         runtime.ReadMemStats(a.stats)
         a.log.Println("metric collected")
 
-        if time.Now().Sub(lastReportTime).Seconds() >= float64(a.reportInterval) {
+        if time.Since(lastReportTime).Seconds() >= float64(a.reportInterval) {
             err = a.sendMetrics()
         }
 

@@ -13,10 +13,10 @@ const GetAllRowFormat = "%s: %s\n"
 
 type MetricHandler struct {
     log     *log.Logger
-    service service.IMetricService
+    service service.MetricService
 }
 
-func New(service service.IMetricService, log *log.Logger,) MetricHandler {
+func New(service service.MetricService, log *log.Logger,) MetricHandler {
     return MetricHandler{log: log, service: service}
 }
 
@@ -80,16 +80,11 @@ func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h MetricHandler) updateGauge(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        return
-    }
+    var name string
+    var rawValue string
 
-    name := r.PathValue(service.MetricNamePathKey)
-    rawValue := r.PathValue(service.MetricValuePathKey)
-
-    if len(name) == 0 || len(rawValue) == 0 {
-        w.WriteHeader(http.StatusNotFound)
+    valid := validateUpdateRequest(&name, &rawValue, w, r)
+    if !valid {
         return
     }
 
@@ -109,16 +104,11 @@ func (h MetricHandler) updateGauge(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h MetricHandler) updateCounter(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        return
-    }
+    var name string
+    var rawValue string
 
-    name := r.PathValue(service.MetricNamePathKey)
-    rawValue := r.PathValue(service.MetricValuePathKey)
-
-    if len(name) == 0 || len(rawValue) == 0 {
-        w.WriteHeader(http.StatusNotFound)
+    valid := validateUpdateRequest(&name, &rawValue, w, r)
+    if !valid {
         return
     }
 
@@ -135,4 +125,21 @@ func (h MetricHandler) updateCounter(w http.ResponseWriter, r *http.Request) {
     }
 
     w.WriteHeader(http.StatusOK)
+}
+
+func validateUpdateRequest(name *string, rawValue *string, w http.ResponseWriter, r *http.Request) bool {
+    if r.Method != http.MethodPost {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return false
+    }
+
+    *name = r.PathValue(service.MetricNamePathKey)
+    *rawValue = r.PathValue(service.MetricValuePathKey)
+
+    if len(*name) == 0 || len(*rawValue) == 0 {
+        w.WriteHeader(http.StatusNotFound)
+        return false
+    }
+
+    return true
 }

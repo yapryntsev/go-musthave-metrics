@@ -1,6 +1,7 @@
 package main
 
 import (
+    "context"
     "flag"
     "fmt"
     "github.com/go-chi/chi/v5"
@@ -11,16 +12,46 @@ import (
     "log"
     "net/http"
     "os"
+    "os/signal"
+    "syscall"
     "time"
 )
 
 func main() {
+    appLog := newLog(`app`)
+
     addr := new(string)
     parseFlags(addr)
 
-    if err := run(*addr); err != nil {
-        panic(err)
+    server := configureServer(*addr, appLog)
+
+    serverError := make(chan error, 1)
+    stopSignal := make(chan os.Signal, 1)
+
+    go func() {
+        appLog.Println(`server is running`)
+        if err := server.ListenAndServe(); err != nil {
+            serverError <- err
+        }
+    }()
+
+    signal.Notify(stopSignal, os.Interrupt, syscall.SIGTERM)
+
+    select {
+    case err := <-serverError:
+        log.Printf(`shutdown with server error: %v`, err)
+    case sig := <-stopSignal:
+        log.Printf(`shutdown with os signal: %v`, sig)
     }
+
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+
+    if err := server.Shutdown(ctx); err != nil {
+        log.Printf(`failed to gracefully shutdown server with error: %v`, err)
+    }
+
+    log.Println(`server terminated`)
 }
 
 func parseFlags(addr *string) {
@@ -28,9 +59,7 @@ func parseFlags(addr *string) {
     flag.Parse()
 }
 
-func run(addr string) error {
-    appLog := newLog(`app`)
-
+func configureServer(addr string, appLog *log.Logger) *http.Server {
     appLog.Printf(`server bootstrap, address: %s`, addr)
     metricRepo := repository.NewInMemoryRepo()
     metricService := service.New(metricRepo, newLog("service"))
@@ -39,7 +68,11 @@ func run(addr string) error {
     r := chi.NewRouter()
     r.Use(middleware.Timeout(5 * time.Second))
 
-    getValueEndpoint := fmt.Sprintf(`/value/{%s}/{%s}`, service.MetricTypePathKey, service.MetricNamePathKey)
+    getValueEndpoint := fmt.Sprintf(
+        `/value/{%s}/{%s}`,
+        service.MetricTypePathKey,
+        service.MetricNamePathKey,
+    )
     updateValueEndpoint := fmt.Sprintf(
         `/update/{%s}/{%s}/{%s}`,
         service.MetricTypePathKey,
@@ -51,9 +84,15 @@ func run(addr string) error {
     r.Get(getValueEndpoint, metricHandler.GetValue)
     r.Post(updateValueEndpoint, metricHandler.Update)
 
-    appLog.Println(`handler registered`)
+    appLog.Println(`handlers registered`)
 
-    return http.ListenAndServe(addr, r)
+    return &http.Server{
+        Addr:         addr,
+        Handler:      r,
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 5 * time.Second,
+        IdleTimeout:  30 * time.Second,
+    }
 }
 
 func newLog(prefix string) *log.Logger {

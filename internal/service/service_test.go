@@ -169,8 +169,8 @@ func Test_GetAll_HasStoredValue_Return(t *testing.T) {
     require.Equal(t, expectedFormattedValue, value)
 }
 
-func makeService(repo repository.IMetricRepository) *MetricService {
-    return &MetricService{
+func makeService(repo repository.MetricRepository) *Service {
+    return &Service{
         log:  log.Default(),
         repo: repo,
     }

@@ -1,11 +1,13 @@
 package agent
 
 import (
+    "context"
     "errors"
     "fmt"
     "github.com/go-resty/resty/v2"
     "log"
     "math/rand"
+    "net/http"
     "runtime"
     "strconv"
     "time"
@@ -25,37 +27,52 @@ type Agent struct {
 }
 
 func New(addr string, reportInterval uint, pollInterval uint, log *log.Logger) *Agent {
+    client := http.Client{
+        Timeout: 5 * time.Second,
+    }
+
     return &Agent{
         addr:           addr,
         stats:          &runtime.MemStats{},
         log:            log,
-        client:         resty.New(),
+        client:         resty.NewWithClient(&client),
         reportInterval: reportInterval,
         pollInterval:   pollInterval,
     }
 }
 
-func (a *Agent) StartGathering() error {
-    var err error
+func (a *Agent) StartGathering(ctx context.Context) error {
     lastReportTime := time.Now()
-
     for {
-        time.Sleep(time.Duration(a.pollInterval) * time.Second)
-
-        a.pollCount++
-        a.randValue = rand.Float64()
-
-        runtime.ReadMemStats(a.stats)
-        a.log.Println("metric collected")
-
-        if time.Since(lastReportTime).Seconds() >= float64(a.reportInterval) {
-            err = a.sendMetrics()
-        }
-
-        if err != nil {
-            return err
+        select {
+        case <-ctx.Done():
+            return nil
+        default:
+            err := a.scheduleMetricsFetchAndUpload(&lastReportTime)
+            if err != nil {
+                return err
+            }
         }
     }
+}
+
+func (a *Agent) scheduleMetricsFetchAndUpload(lastReportTime *time.Time) error {
+    time.Sleep(time.Duration(a.pollInterval) * time.Second)
+
+    a.pollCount++
+    seed := time.Now().Unix()
+    a.randValue = rand.New(rand.NewSource(seed)).Float64()
+
+    runtime.ReadMemStats(a.stats)
+    a.log.Println("metric collected")
+
+    if time.Since(*lastReportTime).Seconds() < float64(a.reportInterval) {
+        return nil
+    }
+    *lastReportTime = time.Now()
+
+    err := a.sendMetrics()
+    return err
 }
 
 func (a *Agent) sendMetrics() error {
@@ -110,11 +127,18 @@ func (a *Agent) sendMetric(t string, name string, value string) error {
         return errors.New("host must be configured")
     }
 
-    _, err := a.client.R().
+    resp, err := a.client.R().
         SetHeader(`Content-Type`, `text/plain`).
         Post(fmt.Sprintf(`http://%s/update/%s/%s/%s`, a.addr, t, name, value))
 
-    a.log.Printf(`metric sent. type: %s, name: %s, value: %s`, t, name, value)
+    if err != nil {
+        return err
+    }
 
-    return err
+    if resp.StatusCode() != http.StatusOK {
+        return fmt.Errorf(`unexpected status code d: %d`, resp.StatusCode())
+    }
+
+    a.log.Printf(`metric sent. type: %s, name: %s, value: %s`, t, name, value)
+    return nil
 }

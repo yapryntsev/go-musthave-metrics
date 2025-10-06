@@ -3,18 +3,19 @@ package agent
 import (
     "errors"
     "fmt"
+    "github.com/go-resty/resty/v2"
     "log"
     "math/rand"
-    "net/http"
     "runtime"
     "strconv"
     "time"
 )
 
 type Agent struct {
-    host  string
-    stats *runtime.MemStats
-    log   *log.Logger
+    host   string
+    stats  *runtime.MemStats
+    log    *log.Logger
+    client *resty.Client
     // Metrics
     pollCount int
     randValue float64
@@ -22,9 +23,10 @@ type Agent struct {
 
 func New(host string, port int, log *log.Logger) *Agent {
     return &Agent{
-        host:  fmt.Sprintf("%s:%d", host, port),
-        stats: &runtime.MemStats{},
-        log:   log,
+        host:   fmt.Sprintf("%s:%d", host, port),
+        stats:  &runtime.MemStats{},
+        log:    log,
+        client: resty.New(),
     }
 }
 
@@ -102,14 +104,9 @@ func (a *Agent) sendMetric(t string, name string, value string) error {
         return errors.New("host must be configured")
     }
 
-    resp, err := http.Post(
-        fmt.Sprintf(`http://%s/update/%s/%s/%s`, a.host, t, name, value),
-        "text/plain",
-        nil,
-    )
-    if resp != nil {
-        defer resp.Body.Close()
-    }
+    _, err := a.client.R().
+        SetHeader(`Content-Type`, `text/plain`).
+        Post(fmt.Sprintf(`http://%s/update/%s/%s/%s`, a.host, t, name, value))
 
     a.log.Printf(`metric sent. type: %s, name: %s, value: %s`, t, name, value)
 

@@ -1,12 +1,15 @@
 package handler
 
 import (
-    "errors"
+    "bytes"
+    "fmt"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "log"
     "net/http"
     "strconv"
 )
+
+const GetAllRowFormat = "%s: %s\n"
 
 type MetricHandler struct {
     log     *log.Logger
@@ -15,6 +18,54 @@ type MetricHandler struct {
 
 func New(service service.IMetricService, log *log.Logger,) MetricHandler {
     return MetricHandler{log: log, service: service}
+}
+
+func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return
+    }
+
+    res, err := h.service.GetAll()
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    b := new(bytes.Buffer)
+    for k, v := range res {
+        fmt.Fprintf(b, GetAllRowFormat, k, v)
+    }
+
+    w.Write(b.Bytes())
+}
+
+func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return
+    }
+
+    metricType := r.PathValue(service.MetricTypePathKey)
+    name := r.PathValue(service.MetricNamePathKey)
+
+    if len(name) == 0 || len(metricType) == 0 {
+        w.WriteHeader(http.StatusNotFound)
+        return
+    }
+
+    res, err := h.service.Get(metricType, name)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    if len(res) == 0 {
+        w.WriteHeader(http.StatusNotFound)
+        return
+    }
+
+    w.Write([]byte(res))
 }
 
 func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -50,11 +101,7 @@ func (h MetricHandler) updateGauge(w http.ResponseWriter, r *http.Request) {
 
     err = h.service.UpdateGauge(name, value)
     if err != nil {
-        if errors.Is(err, service.ErrMetricTypeMismatch) {
-            w.WriteHeader(http.StatusBadRequest)
-        } else {
-            w.WriteHeader(http.StatusInternalServerError)
-        }
+        w.WriteHeader(http.StatusInternalServerError)
         return
     }
 
@@ -83,11 +130,7 @@ func (h MetricHandler) updateCounter(w http.ResponseWriter, r *http.Request) {
 
     err = h.service.UpdateCounter(name, int64(value))
     if err != nil {
-        if errors.Is(err, service.ErrMetricTypeMismatch) {
-            w.WriteHeader(http.StatusBadRequest)
-        } else {
-            w.WriteHeader(http.StatusInternalServerError)
-        }
+        w.WriteHeader(http.StatusInternalServerError)
         return
     }
 

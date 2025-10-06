@@ -1,12 +1,16 @@
 package repository
 
-type Metric struct {
-    MetricName string
-    TypeName   string
-    Value      float64
-}
+import "errors"
+
+var ErrValueNotFound = errors.New(`metric value not found`)
 
 type IMetricRepository interface {
-    Get(name string) (*Metric, error)
-    Set(metric *Metric) error
+    GetAllFloat() (map[string]float64, error)
+    GetAllInt() (map[string]int64, error)
+
+    GetFloat(name string) (float64, error)
+    GetInt(name string) (int64, error)
+
+    SetFloat(name string, value float64) error
+    SetInt(name string, value int64) error
 }

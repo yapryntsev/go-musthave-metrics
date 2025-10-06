@@ -1,13 +1,24 @@
 package repository
 
-type inMemoryRepository struct {
+type InMemoryRepository struct {
     storage map[string]struct {
         typeName string
         value    float64
     }
 }
 
-func (r inMemoryRepository) Get(name string) (*Metric, error) {
+func NewInMemoryRepo() *InMemoryRepository {
+    return &InMemoryRepository{
+        storage: make(
+            map[string]struct {
+                typeName string
+                value    float64
+            },
+        ),
+    }
+}
+
+func (r InMemoryRepository) Get(name string) (*Metric, error) {
     v, ok := r.storage[name]
     if !ok {
         return nil, nil
@@ -21,7 +32,7 @@ func (r inMemoryRepository) Get(name string) (*Metric, error) {
     return metric, nil
 }
 
-func (r inMemoryRepository) Set(metric *Metric) error {
+func (r InMemoryRepository) Set(metric *Metric) error {
     r.storage[metric.MetricName] = struct {
         typeName string
         value    float64

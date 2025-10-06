@@ -19,12 +19,11 @@ func main() {
 func run(port int) error {
     appLog := newLog(`app`)
 
-    appLog.Printf(`запуск сервера, порт :%d`, port)
-    metricRepo := repository.New()
+    appLog.Printf(`server bootstrap, port :%d`, port)
+    metricRepo := repository.NewInMemoryRepo()
     metricService := service.New(metricRepo, newLog("service"))
     metricHandler := handler.New(metricService, newLog("handler"))
 
-    appLog.Println(`регистрация хендлеров`)
     mux := http.NewServeMux()
     mux.HandleFunc(
         fmt.Sprintf(
@@ -35,6 +34,7 @@ func run(port int) error {
         ),
         metricHandler.Update,
     )
+    appLog.Println(`handler registered`)
 
     return http.ListenAndServe(fmt.Sprintf(`:%d`, port), mux)
 }

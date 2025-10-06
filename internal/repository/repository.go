@@ -4,7 +4,7 @@ import "errors"
 
 var ErrValueNotFound = errors.New(`metric value not found`)
 
-type IMetricRepository interface {
+type MetricRepository interface {
     GetAllFloat() (map[string]float64, error)
     GetAllInt() (map[string]int64, error)
 

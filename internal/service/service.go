@@ -16,26 +16,26 @@ const (
     CounterMetricTypeName = `counter`
 )
 
-type IMetricService interface {
+type MetricService interface {
     GetAll() (map[string]string, error)
     Get(metricType string, name string) (string, error)
     UpdateCounter(name string, value int64) error
     UpdateGauge(name string, value float64) error
 }
 
-type MetricService struct {
+type Service struct {
     log  *log.Logger
-    repo repository.IMetricRepository
+    repo repository.MetricRepository
 }
 
-func New(repo repository.IMetricRepository, log *log.Logger) *MetricService {
-    return &MetricService{
+func New(repo repository.MetricRepository, log *log.Logger) *Service {
+    return &Service{
         log:  log,
         repo: repo,
     }
 }
 
-func (s *MetricService) GetAll() (map[string]string, error) {
+func (s *Service) GetAll() (map[string]string, error) {
     var err error
     res := make(map[string]string)
 
@@ -60,7 +60,7 @@ func (s *MetricService) GetAll() (map[string]string, error) {
     return res, nil
 }
 
-func (s *MetricService) Get(metricType string, name string) (string, error) {
+func (s *Service) Get(metricType string, name string) (string, error) {
     var res string
     var err error
 
@@ -87,7 +87,7 @@ func (s *MetricService) Get(metricType string, name string) (string, error) {
     return res, nil
 }
 
-func (s *MetricService) UpdateCounter(name string, value int64) error {
+func (s *Service) UpdateCounter(name string, value int64) error {
     metric, err := s.repo.GetInt(name)
     if err != nil && !errors.Is(err, repository.ErrValueNotFound) {
         s.log.Printf("failed to fetch counter metric: %s", err.Error())
@@ -104,7 +104,7 @@ func (s *MetricService) UpdateCounter(name string, value int64) error {
     return nil
 }
 
-func (s *MetricService) UpdateGauge(name string, value float64) error {
+func (s *Service) UpdateGauge(name string, value float64) error {
     err := s.repo.SetFloat(name, value)
     if err != nil {
         s.log.Printf("failed to save gauge metric: %s", err.Error())

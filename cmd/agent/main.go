@@ -2,7 +2,6 @@ package main
 
 import (
     "context"
-    "flag"
     "fmt"
     "github.com/yapryntsev/go-musthave-metrics/internal/agent"
     "log"
@@ -13,6 +12,12 @@ import (
 
 func main() {
     appLog := newLog("app")
+
+    err := parseFlags(os.Args, appLog)
+    if err != nil {
+        appLog.Fatal(err)
+    }
+
     appAgent := configureAgent(appLog)
     ctx, cancel := context.WithCancel(context.Background())
 
@@ -34,21 +39,8 @@ func main() {
 }
 
 func configureAgent(appLog *log.Logger) *agent.Agent {
-    addr := new(string)
-    reportInterval := new(uint)
-    pollInterval := new(uint)
-
-    parseFlags(addr, reportInterval, pollInterval)
-
     appLog.Println("agent bootstrap")
-    return agent.New(*addr, *reportInterval, *pollInterval, newLog(`agent`))
-}
-
-func parseFlags(addr *string, reportInterval *uint, pollInterval *uint) {
-    flag.StringVar(addr, `a`, `localhost:8080`, `server endpoint`)
-    flag.UintVar(reportInterval, `r`, 10, `frequency of sending metrics to the server in sec`)
-    flag.UintVar(pollInterval, `p`, 2, `frequency of gathering metrics in sec`)
-    flag.Parse()
+    return agent.New(flagAddr, flagReportInt, flagPollInt, newLog(`agent`))
 }
 
 func newLog(prefix string) *log.Logger {

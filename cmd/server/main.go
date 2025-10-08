@@ -2,7 +2,6 @@ package main
 
 import (
     "context"
-    "flag"
     "fmt"
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
@@ -20,10 +19,12 @@ import (
 func main() {
     appLog := newLog(`app`)
 
-    addr := new(string)
-    parseFlags(addr)
+    err := parseFlags(os.Args)
+    if err != nil {
+        appLog.Fatal(err)
+    }
 
-    server := configureServer(*addr, appLog)
+    server := configureServer(flagAddr, appLog)
 
     serverError := make(chan error, 1)
     stopSignal := make(chan os.Signal, 1)
@@ -52,11 +53,6 @@ func main() {
     }
 
     log.Println(`server terminated`)
-}
-
-func parseFlags(addr *string) {
-    flag.StringVar(addr, `a`, `localhost:8080`, `address and port to run server`)
-    flag.Parse()
 }
 
 func configureServer(addr string, appLog *log.Logger) *http.Server {

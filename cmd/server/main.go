@@ -19,7 +19,7 @@ import (
 func main() {
     appLog := newLog(`app`)
 
-    err := parseFlags(os.Args)
+    err := parseFlags(os.Args[1:])
     if err != nil {
         appLog.Fatal(err)
     }

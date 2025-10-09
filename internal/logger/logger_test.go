@@ -12,14 +12,14 @@ import (
 
 func Test_MiddlewareProduceLogEntry(t *testing.T) {
     // Given
-    expectedUri := "/test"
+    expectedURI := "/test"
     expectedMethod := http.MethodPost
     expectedStatus := http.StatusMethodNotAllowed
     expectedResponse := []byte("test body")
 
     logger, hook := logTest.NewNullLogger()
 
-    r := httptest.NewRequest(expectedMethod, expectedUri, nil)
+    r := httptest.NewRequest(expectedMethod, expectedURI, nil)
     w := httptest.NewRecorder()
 
     middleware := Middleware(

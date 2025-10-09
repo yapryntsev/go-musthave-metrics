@@ -2,7 +2,7 @@ package main
 
 import (
     "flag"
-    "log"
+    log "github.com/sirupsen/logrus"
     "os"
     "strconv"
 )
@@ -27,7 +27,7 @@ var (
     flagPollInt   uint
 )
 
-func parseFlags(args []string, l *log.Logger) error {
+func parseFlags(args []string, l *log.Entry) error {
     fs := flag.NewFlagSet("flags", flag.ExitOnError)
 
     fs.StringVar(&flagAddr, flagAddrKey, flagAddrDefault, `server endpoint`)

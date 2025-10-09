@@ -5,10 +5,11 @@ import (
     "fmt"
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
+    log "github.com/sirupsen/logrus"
     "github.com/yapryntsev/go-musthave-metrics/internal/handler"
+    "github.com/yapryntsev/go-musthave-metrics/internal/logger"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
-    "log"
     "net/http"
     "os"
     "os/signal"
@@ -17,20 +18,20 @@ import (
 )
 
 func main() {
-    appLog := newLog(`app`)
+    appLogger := logger.New(`app`)
 
     err := parseFlags(os.Args[1:])
     if err != nil {
-        appLog.Fatal(err)
+        appLogger.Fatal(err)
     }
 
-    server := configureServer(flagAddr, appLog)
+    server := configureServer(flagAddr, appLogger)
 
     serverError := make(chan error, 1)
     stopSignal := make(chan os.Signal, 1)
 
     go func() {
-        appLog.Println(`server is running`)
+        appLogger.Trace(`server is running`)
         if err := server.ListenAndServe(); err != nil {
             serverError <- err
         }
@@ -55,11 +56,11 @@ func main() {
     log.Println(`server terminated`)
 }
 
-func configureServer(addr string, appLog *log.Logger) *http.Server {
+func configureServer(addr string, appLog *log.Entry) *http.Server {
     appLog.Printf(`server bootstrap, address: %s`, addr)
     metricRepo := repository.NewInMemoryRepo()
-    metricService := service.New(metricRepo, newLog("service"))
-    metricHandler := handler.New(metricService, newLog("handler"))
+    metricService := service.New(metricRepo, logger.New("service"))
+    metricHandler := handler.New(metricService, logger.New("handler"))
 
     r := chi.NewRouter()
     r.Use(middleware.Timeout(5 * time.Second))
@@ -76,9 +77,11 @@ func configureServer(addr string, appLog *log.Logger) *http.Server {
         service.MetricValuePathKey,
     )
 
-    r.Get(`/`, metricHandler.GetAll)
-    r.Get(getValueEndpoint, metricHandler.GetValue)
-    r.Post(updateValueEndpoint, metricHandler.Update)
+    handlersLogger := logger.New("handler")
+
+    r.Get(`/`, logger.Middleware(metricHandler.GetAll, handlersLogger))
+    r.Get(getValueEndpoint, logger.Middleware(metricHandler.GetValue, handlersLogger))
+    r.Post(updateValueEndpoint, logger.Middleware(metricHandler.Update, handlersLogger))
 
     appLog.Println(`handlers registered`)
 
@@ -89,8 +92,4 @@ func configureServer(addr string, appLog *log.Logger) *http.Server {
         WriteTimeout: 5 * time.Second,
         IdleTimeout:  30 * time.Second,
     }
-}
-
-func newLog(prefix string) *log.Logger {
-    return log.New(os.Stdout, fmt.Sprintf("%s: ", prefix), log.LstdFlags)
 }

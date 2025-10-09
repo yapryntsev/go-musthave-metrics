@@ -2,9 +2,15 @@ module github.com/yapryntsev/go-musthave-metrics
 
 go 1.24.2
 
-require github.com/stretchr/testify v1.11.1
+require (
+	github.com/sirupsen/logrus v1.9.3
+	github.com/stretchr/testify v1.11.1
+)
 
-require golang.org/x/net v0.33.0 // indirect
+require (
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -2,9 +2,8 @@ package main
 
 import (
     "context"
-    "fmt"
+    log "github.com/sirupsen/logrus"
     "github.com/yapryntsev/go-musthave-metrics/internal/agent"
-    "log"
     "os"
     "os/signal"
     "syscall"
@@ -38,11 +37,11 @@ func main() {
     cancel()
 }
 
-func configureAgent(appLog *log.Logger) *agent.Agent {
+func configureAgent(appLog *log.Entry) *agent.Agent {
     appLog.Println("agent bootstrap")
     return agent.New(flagAddr, flagReportInt, flagPollInt, newLog(`agent`))
 }
 
-func newLog(prefix string) *log.Logger {
-    return log.New(os.Stdout, fmt.Sprintf("%s: ", prefix), log.LstdFlags)
+func newLog(system string) *log.Entry {
+    return log.WithField("system", system)
 }

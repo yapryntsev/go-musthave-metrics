@@ -3,12 +3,12 @@ package handler
 import (
     "errors"
     "fmt"
+    log "github.com/sirupsen/logrus"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "github.com/yapryntsev/go-musthave-metrics/internal/service/mocks"
     "io"
-    "log"
     "net/http"
     "net/http/httptest"
     "testing"
@@ -196,7 +196,7 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
 
 func makeHandler(service *mocks.MetricServiceMock) *MetricHandler {
     return &MetricHandler{
-        log:     log.Default(),
+        log:     log.NewEntry(log.New()),
         service: service,
     }
 }

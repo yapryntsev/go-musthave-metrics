@@ -1,15 +1,19 @@
 package mocks
 
+import (
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+)
+
 type MetricServiceMock struct {
     IsGetAllCalled    bool
     GetAllReturnValue map[string]string
     GetAllReturnError error
 
-    IsGetCalled                bool
-    GetLastCallMetricTypeParam string
-    GetLastCallNameParam       string
-    GetReturnValue             string
-    GetReturnError             error
+    IsGetCalled             bool
+    GetLastCallParam        models.Metrics
+    GetReturnValue          bool
+    GetReturnError          error
+    GetLastCallParamMutator func(metrics *models.Metrics)
 
     IsUpdateCounterCalled           bool
     UpdateCounterLastCallNameParam  string
@@ -31,10 +35,14 @@ func (m *MetricServiceMock) GetAll() (map[string]string, error) {
     return m.GetAllReturnValue, m.GetAllReturnError
 }
 
-func (m *MetricServiceMock) Get(metricType string, name string) (string, error) {
+func (m *MetricServiceMock) Get(metric *models.Metrics) (bool, error) {
     m.IsGetCalled = true
-    m.GetLastCallNameParam = name
-    m.GetLastCallMetricTypeParam = metricType
+    m.GetLastCallParam = *metric
+
+    if m.GetLastCallParamMutator != nil {
+        m.GetLastCallParamMutator(metric)
+    }
+
     return m.GetReturnValue, m.GetReturnError
 }
 

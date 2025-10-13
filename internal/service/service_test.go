@@ -4,9 +4,9 @@ import (
     "errors"
     log "github.com/sirupsen/logrus"
     "github.com/stretchr/testify/require"
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository/mocks"
-    "strconv"
     "testing"
 )
 
@@ -86,7 +86,12 @@ func Test_Get_GotErrorFromRepo_Rethrow(t *testing.T) {
     repo.GetFloatReturnError = expectedError
 
     // When
-    value, err := service.Get(GaugeMetricTypeName, `test`)
+    value, err := service.Get(
+        &models.Metrics{
+            ID:    "test",
+            MType: models.Gauge,
+        },
+    )
 
     // Then
     require.True(t, repo.IsGetFloatCalled, `expected to call repo for value`)
@@ -98,19 +103,32 @@ func Test_Get_GotErrorFromRepo_Rethrow(t *testing.T) {
 func Test_Get_HasStoredValue_Return(t *testing.T) {
     // Given
     expectedValue := 200.0
+    expectedMetric := models.Metrics{
+        ID:    "test",
+        MType: models.Gauge,
+        Value: &expectedValue,
+    }
 
     repo := mocks.NewMockRepository()
     service := makeService(repo)
     repo.GetFloatReturnValue = expectedValue
 
     // When
-    value, err := service.Get(GaugeMetricTypeName, `test`)
+    metric := &models.Metrics{
+        ID:    expectedMetric.ID,
+        MType: models.Gauge,
+    }
+    ok, err := service.Get(metric)
 
     // Then
+    require.True(t, ok, "result expected to be true")
     require.True(t, repo.IsGetFloatCalled, `expected to call repo for value`)
     require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, strconv.FormatFloat(expectedValue, 'f', -1, 64), value)
-    require.Equal(t, repo.GetFloatLastCallNameParam, `test`, `metric name mismatch`)
+    require.Equal(t, expectedMetric.ID, metric.ID)
+    require.Equal(t, expectedMetric.MType, metric.MType)
+    require.Equal(t, *expectedMetric.Value, *metric.Value)
+    require.Nil(t, expectedMetric.Delta, "delta property expected to be nil")
+    require.Equal(t, repo.GetFloatLastCallNameParam, expectedMetric.ID, `metric name mismatch`)
 }
 
 func Test_GetAll_GotErrorFromRepo_Rethrow(t *testing.T) {

@@ -2,8 +2,10 @@ package handler
 
 import (
     "bytes"
+    "encoding/json"
     "fmt"
     log "github.com/sirupsen/logrus"
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "net/http"
     "strconv"
@@ -46,100 +48,166 @@ func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    metricType := r.PathValue(service.MetricTypePathKey)
-    name := r.PathValue(service.MetricNamePathKey)
+    mType := r.PathValue(service.MetricTypePathKey)
+    mID := r.PathValue(service.MetricNamePathKey)
 
-    if len(name) == 0 || len(metricType) == 0 {
+    if len(mID) == 0 || len(mType) == 0 {
         w.WriteHeader(http.StatusNotFound)
         return
     }
 
-    res, err := h.service.Get(metricType, name)
+    metric := &models.Metrics{
+        ID:    mID,
+        MType: mType,
+    }
+
+    ok, err := h.service.Get(metric)
     if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
 
-    if len(res) == 0 {
+    if !ok {
         w.WriteHeader(http.StatusNotFound)
         return
     }
 
-    w.Write([]byte(res))
+    switch metric.MType {
+    case models.Counter:
+        v := strconv.Itoa(int(*metric.Delta))
+        _, err = w.Write([]byte(v))
+    case models.Gauge:
+        v := strconv.FormatFloat(*metric.Value, 'f', -1, 64)
+        _, err = w.Write([]byte(v))
+    }
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+}
+
+func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+
+    if r.Method != http.MethodPost {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return
+    }
+
+    metric := &models.Metrics{}
+    if err := json.NewDecoder(r.Body).Decode(metric); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    ok, err := h.service.Get(metric)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    if !ok {
+        w.WriteHeader(http.StatusNotFound)
+        return
+    }
+
+    if err := json.NewEncoder(w).Encode(metric); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
 }
 
 func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
-    switch r.PathValue(service.MetricTypePathKey) {
-    case service.GaugeMetricTypeName:
-        h.updateGauge(w, r)
-    case service.CounterMetricTypeName:
-        h.updateCounter(w, r)
-    default:
-        w.WriteHeader(http.StatusBadRequest)
-    }
-}
-
-func (h MetricHandler) updateGauge(w http.ResponseWriter, r *http.Request) {
-    var name string
-    var rawValue string
-
-    valid := validateUpdateRequest(&name, &rawValue, w, r)
-    if !valid {
-        return
-    }
-
-    value, err := strconv.ParseFloat(rawValue, 64)
-    if err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        return
-    }
-
-    err = h.service.UpdateGauge(name, value)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        return
-    }
-
-    w.WriteHeader(http.StatusOK)
-}
-
-func (h MetricHandler) updateCounter(w http.ResponseWriter, r *http.Request) {
-    var name string
-    var rawValue string
-
-    valid := validateUpdateRequest(&name, &rawValue, w, r)
-    if !valid {
-        return
-    }
-
-    value, err := strconv.Atoi(rawValue)
-    if err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        return
-    }
-
-    err = h.service.UpdateCounter(name, int64(value))
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        return
-    }
-
-    w.WriteHeader(http.StatusOK)
-}
-
-func validateUpdateRequest(name *string, rawValue *string, w http.ResponseWriter, r *http.Request) bool {
     if r.Method != http.MethodPost {
         w.WriteHeader(http.StatusMethodNotAllowed)
-        return false
+        return
     }
 
-    *name = r.PathValue(service.MetricNamePathKey)
-    *rawValue = r.PathValue(service.MetricValuePathKey)
+    name := r.PathValue(service.MetricNamePathKey)
+    rawValue := r.PathValue(service.MetricValuePathKey)
 
-    if len(*name) == 0 || len(*rawValue) == 0 {
+    if len(name) == 0 || len(rawValue) == 0 {
         w.WriteHeader(http.StatusNotFound)
-        return false
+        return
     }
 
-    return true
+    metric := &models.Metrics{
+        ID: name,
+    }
+
+    var value float64
+    var delta int64
+    var err error
+
+    switch r.PathValue(service.MetricTypePathKey) {
+    case models.Gauge:
+        value, err = strconv.ParseFloat(rawValue, 64)
+
+        metric.MType = models.Gauge
+        metric.Value = &value
+    case models.Counter:
+        var v int
+
+        v, err = strconv.Atoi(rawValue)
+        delta = int64(v)
+
+        metric.MType = models.Counter
+        metric.Delta = &delta
+    default:
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    h.updateMetric(w, metric)
+}
+
+func (h MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return
+    }
+
+    metric := &models.Metrics{}
+    if err := json.NewDecoder(r.Body).Decode(metric); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    h.updateMetric(w, metric)
+}
+
+func (h MetricHandler) updateMetric(w http.ResponseWriter, metric *models.Metrics) {
+    var err error
+
+    switch metric.MType {
+    case models.Gauge:
+        if metric.Value == nil {
+            w.WriteHeader(http.StatusBadRequest)
+            return
+        }
+        err = h.service.UpdateGauge(metric.ID, *metric.Value)
+    case models.Counter:
+        if metric.Delta == nil {
+            w.WriteHeader(http.StatusBadRequest)
+            return
+        }
+        err = h.service.UpdateCounter(metric.ID, *metric.Delta)
+    }
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
 }

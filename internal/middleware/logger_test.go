@@ -1,4 +1,4 @@
-package logger
+package middleware
 
 import (
     log "github.com/sirupsen/logrus"
@@ -22,16 +22,14 @@ func Test_MiddlewareProduceLogEntry(t *testing.T) {
     r := httptest.NewRequest(expectedMethod, expectedURI, nil)
     w := httptest.NewRecorder()
 
-    middleware := Middleware(
-        func(w http.ResponseWriter, r *http.Request) {
-            _, _ = w.Write(expectedResponse)
-            w.WriteHeader(expectedStatus)
-        },
-        log.NewEntry(logger),
-    )
+    handler := func(w http.ResponseWriter, r *http.Request) {
+        _, _ = w.Write(expectedResponse)
+        w.WriteHeader(expectedStatus)
+    }
+    middleware := Logger(log.NewEntry(logger))
 
     // When
-    middleware(w, r)
+    middleware(http.HandlerFunc(handler)).ServeHTTP(w, r)
 
     // Then
     res := w.Result()
@@ -61,13 +59,11 @@ func Test_HandlerNotCallWriteHeader_TreatAsStatusOK(t *testing.T) {
     r := httptest.NewRequest(http.MethodPost, "/test", nil)
     w := httptest.NewRecorder()
 
-    middleware := Middleware(
-        func(w http.ResponseWriter, r *http.Request) {},
-        log.NewEntry(logger),
-    )
+    handler := func(w http.ResponseWriter, r *http.Request) {}
+    middleware := Logger(log.NewEntry(logger))
 
     // When
-    middleware(w, r)
+    middleware(http.HandlerFunc(handler)).ServeHTTP(w, r)
 
     // Then
     res := w.Result()

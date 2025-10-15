@@ -1,7 +1,10 @@
 package agent
 
 import (
+    "bytes"
+    "compress/gzip"
     "context"
+    "encoding/json"
     "errors"
     "fmt"
     "github.com/go-resty/resty/v2"
@@ -149,9 +152,16 @@ func (a *Agent) sendMetric(t string, name string, value interface{}) error {
         metric.Value = &v
     }
 
+    var body bytes.Buffer
+    err := json.NewEncoder(gzip.NewWriter(&body)).Encode(metric)
+    if err != nil {
+        return err
+    }
+
     resp, err := a.client.R().
         SetHeader("Content-Type", "application/json").
-        SetBody(metric).
+        SetHeader("Content-Encoding", "gzip").
+        SetBody(body).
         Post(fmt.Sprintf("http://%s/update", a.addr))
 
     if err != nil {

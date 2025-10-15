@@ -4,10 +4,9 @@ import (
     "context"
     "fmt"
     "github.com/go-chi/chi/v5"
-    "github.com/go-chi/chi/v5/middleware"
     log "github.com/sirupsen/logrus"
     "github.com/yapryntsev/go-musthave-metrics/internal/handler"
-    "github.com/yapryntsev/go-musthave-metrics/internal/logger"
+    "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "net/http"
@@ -18,7 +17,7 @@ import (
 )
 
 func main() {
-    appLogger := logger.New(`app`)
+    appLogger := newLogger(`app`)
 
     err := parseFlags(os.Args[1:])
     if err != nil {
@@ -59,11 +58,8 @@ func main() {
 func configureServer(addr string, appLog *log.Entry) *http.Server {
     appLog.Printf(`server bootstrap, address: %s`, addr)
     metricRepo := repository.NewInMemoryRepo()
-    metricService := service.New(metricRepo, logger.New("service"))
-    metricHandler := handler.New(metricService, logger.New("handler"))
-
-    r := chi.NewRouter()
-    r.Use(middleware.Timeout(5 * time.Second))
+    metricService := service.New(metricRepo, newLogger("service"))
+    metricHandler := handler.New(metricService, newLogger("handler"))
 
     getValueEndpoint := fmt.Sprintf(
         `/value/{%s}/{%s}`,
@@ -77,17 +73,21 @@ func configureServer(addr string, appLog *log.Entry) *http.Server {
         service.MetricValuePathKey,
     )
 
-    handlersLogger := logger.New("handler")
+    handlersLogger := newLogger("handler")
 
-    r.Get(`/`, logger.Middleware(metricHandler.GetAll, handlersLogger))
+    r := chi.NewRouter()
+    r.Use(middleware.Logger(handlersLogger))
+    r.Use(middleware.Compress)
 
-    r.Get("/value", logger.Middleware(metricHandler.GetObject, handlersLogger))
-    r.Post("/value/", logger.Middleware(metricHandler.GetObject, handlersLogger))
-    r.Post("/update", logger.Middleware(metricHandler.UpdateObject, handlersLogger))
-    r.Post("/update/", logger.Middleware(metricHandler.UpdateObject, handlersLogger))
+    r.Get(`/`, metricHandler.GetAll)
 
-    r.Get(getValueEndpoint, logger.Middleware(metricHandler.GetValue, handlersLogger))
-    r.Post(updateValueEndpoint, logger.Middleware(metricHandler.Update, handlersLogger))
+    r.Post("/value", metricHandler.GetObject)
+    r.Post("/value/", metricHandler.GetObject)
+    r.Post("/update", metricHandler.UpdateObject)
+    r.Post("/update/", metricHandler.UpdateObject)
+
+    r.Get(getValueEndpoint, metricHandler.GetValue)
+    r.Post(updateValueEndpoint, metricHandler.Update)
 
     appLog.Println(`handlers registered`)
 
@@ -98,4 +98,8 @@ func configureServer(addr string, appLog *log.Entry) *http.Server {
         WriteTimeout: 5 * time.Second,
         IdleTimeout:  30 * time.Second,
     }
+}
+
+func newLogger(scope string) *log.Entry {
+    return log.WithField("scope", scope)
 }

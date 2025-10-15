@@ -39,6 +39,7 @@ func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
         fmt.Fprintf(b, GetAllRowFormat, k, v)
     }
 
+    w.Header().Set("Content-Type", "text/html")
     w.Write(b.Bytes())
 }
 
@@ -85,8 +86,6 @@ func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-
-    w.WriteHeader(http.StatusOK)
 }
 
 func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
@@ -118,8 +117,6 @@ func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
-
-    w.WriteHeader(http.StatusOK)
 }
 
 func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {

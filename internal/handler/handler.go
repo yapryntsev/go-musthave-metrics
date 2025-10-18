@@ -35,8 +35,15 @@ func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
     }
 
     b := new(bytes.Buffer)
-    for k, v := range res {
-        fmt.Fprintf(b, GetAllRowFormat, k, v)
+    for _, m := range res {
+        switch m.MType {
+        case models.Counter:
+            v := strconv.Itoa(int(*m.Delta))
+            fmt.Fprintf(b, GetAllRowFormat, m.ID, v)
+        case models.Gauge:
+            v := fmt.Sprintf(`%.f`, *m.Value)
+            fmt.Fprintf(b, GetAllRowFormat, m.ID, v)
+        }
     }
 
     w.Header().Set("Content-Type", "text/html")

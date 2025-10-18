@@ -13,77 +13,85 @@ import (
 func Test_UpdateCounter_SaveNewValue(t *testing.T) {
     // Given
     expectedValue := int64(900)
-    metricName := `test_metric`
+    mID := "test_metric"
 
     repo := mocks.NewMockRepository()
     service := makeService(repo)
 
     // When
-    err := service.UpdateCounter(metricName, expectedValue)
+    err := service.UpdateCounter(mID, expectedValue)
 
     // Then
-    require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, expectedValue, repo.SetIntLastCallValueParam)
+    require.NoError(t, err, "expected successful operation")
+    require.Equal(t, &models.Metrics{ID: mID, MType: models.Counter, Delta: &expectedValue}, repo.SetLastCallParam)
 }
 
 func Test_UpdateCounter_UpdateExistingValue(t *testing.T) {
     // Given
     expectedValue := int64(1800)
     storedValue := int64(900)
-    metricName := `test_metric`
+    mID := "test_metric"
 
     repo := mocks.NewMockRepository()
     service := makeService(repo)
-    repo.GetIntReturnValue = storedValue
+    repo.GetReturnValue = &models.Metrics{
+        ID:    mID,
+        MType: models.Counter,
+        Delta: &storedValue,
+    }
 
     // When
-    err := service.UpdateCounter(metricName, storedValue)
+    err := service.UpdateCounter(mID, storedValue)
 
     // Then
-    require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, expectedValue, repo.SetIntLastCallValueParam)
+    require.NoError(t, err, "expected successful operation")
+    require.Equal(t, &models.Metrics{ID: mID, MType: models.Counter, Delta: &expectedValue}, repo.SetLastCallParam)
 }
 
 func Test_UpdateGauge_SaveNewValue(t *testing.T) {
     // Given
     expectedValue := 900.5
-    metricName := `test_metric`
+    mID := "test_metric"
 
     repo := mocks.NewMockRepository()
     service := makeService(repo)
 
     // When
-    err := service.UpdateGauge(metricName, expectedValue)
+    err := service.UpdateGauge(mID, expectedValue)
 
     // Then
-    require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, expectedValue, repo.SetFloatLastCallValueParam)
+    require.NoError(t, err, "expected successful operation")
+    require.Equal(t, &models.Metrics{ID: mID, MType: models.Gauge, Value: &expectedValue}, repo.SetLastCallParam)
 }
 
-func Test_UpdateGauge_UpdateExistingValue(t *testing.T) {
+func Test_UpdateGauge_OverrideExistingValue(t *testing.T) {
     // Given
     storedValue := 200.0
     expectedValue := 1800.0
-    metricName := `test_metric`
+    mID := "test_metric"
 
     repo := mocks.NewMockRepository()
     service := makeService(repo)
-    repo.GetFloatReturnValue = storedValue
+    repo.GetReturnValue = &models.Metrics{
+        ID:    mID,
+        MType: models.Gauge,
+        Value: &storedValue,
+    }
 
     // When
-    err := service.UpdateGauge(metricName, expectedValue)
+    err := service.UpdateGauge(mID, expectedValue)
 
     // Then
-    require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, expectedValue, repo.SetFloatLastCallValueParam)
+    require.NoError(t, err, "expected successful operation")
+    require.Equal(t, &models.Metrics{ID: mID, MType: models.Gauge, Value: &expectedValue}, repo.SetLastCallParam)
 }
 
 func Test_Get_GotErrorFromRepo_Rethrow(t *testing.T) {
     // Given
-    expectedError := errors.New(`test error`)
+    expectedError := errors.New("test error")
     repo := mocks.NewMockRepository()
     service := makeService(repo)
-    repo.GetFloatReturnError = expectedError
+    repo.GetReturnError = expectedError
 
     // When
     value, err := service.Get(
@@ -94,10 +102,11 @@ func Test_Get_GotErrorFromRepo_Rethrow(t *testing.T) {
     )
 
     // Then
-    require.True(t, repo.IsGetFloatCalled, `expected to call repo for value`)
-    require.Empty(t, value, `expected to throw error, return value instead`)
-    require.ErrorIs(t, err, expectedError, `return error type mismatch`)
-    require.Equal(t, repo.GetFloatLastCallNameParam, `test`, `metric name mismatch`)
+    require.True(t, repo.IsGetCalled, "expected to call repo for value")
+    require.Empty(t, value, "expected to throw error, return value instead")
+    require.ErrorIs(t, err, expectedError, "return error type mismatch")
+    require.Equal(t, repo.GetLastCallFirstParam, "test", "metric name mismatch")
+    require.Equal(t, repo.GetLastCallSecondParam, models.Gauge, "metric type mismatch")
 }
 
 func Test_Get_HasStoredValue_Return(t *testing.T) {
@@ -111,80 +120,62 @@ func Test_Get_HasStoredValue_Return(t *testing.T) {
 
     repo := mocks.NewMockRepository()
     service := makeService(repo)
-    repo.GetFloatReturnValue = expectedValue
+    repo.GetReturnValue = &expectedMetric
 
     // When
     metric := &models.Metrics{
         ID:    expectedMetric.ID,
-        MType: models.Gauge,
+        MType: expectedMetric.MType,
     }
     ok, err := service.Get(metric)
 
     // Then
     require.True(t, ok, "result expected to be true")
-    require.True(t, repo.IsGetFloatCalled, `expected to call repo for value`)
-    require.NoError(t, err, `expected successful operation`)
+    require.True(t, repo.IsGetCalled, "expected to call repo for value")
+    require.NoError(t, err, "expected successful operation")
     require.Equal(t, expectedMetric.ID, metric.ID)
     require.Equal(t, expectedMetric.MType, metric.MType)
     require.Equal(t, *expectedMetric.Value, *metric.Value)
     require.Nil(t, expectedMetric.Delta, "delta property expected to be nil")
-    require.Equal(t, repo.GetFloatLastCallNameParam, expectedMetric.ID, `metric name mismatch`)
+    require.Equal(t, repo.GetLastCallFirstParam, expectedMetric.ID, "metric name mismatch")
+    require.Equal(t, repo.GetLastCallSecondParam, models.Gauge, "metric type mismatch")
 }
 
 func Test_GetAll_GotErrorFromRepo_Rethrow(t *testing.T) {
-    fErr := errors.New(`float err`)
-    iErr := errors.New(`int err`)
-
-    tests := [...]struct {
-        name     string
-        floatErr error
-        intErr   error
-        want     error
-    }{
-        {`get float error`, fErr, nil, fErr},
-        {`get int error`, nil, iErr, iErr},
-    }
-
-    for _, tc := range tests {
-        t.Run(
-            tc.name, func(t *testing.T) {
-                // Given
-                repo := mocks.NewMockRepository()
-                service := makeService(repo)
-                repo.GetAllFloatReturnError = tc.floatErr
-                repo.GetAllIntReturnError = tc.intErr
-
-                // When
-                value, err := service.GetAll()
-
-                // Then
-                require.Empty(t, value, `expected to throw error, return value instead`)
-                require.ErrorIs(t, err, tc.want, `return error type mismatch`)
-            },
-        )
-    }
-}
-
-func Test_GetAll_HasStoredValue_Return(t *testing.T) {
     // Given
-    expectedValue := map[string]float64{
-        `test`: 64.2,
-    }
-    expectedFormattedValue := map[string]string{
-        `test`: `64.200`,
-    }
-
+    expectedError := errors.New("test err")
     repo := mocks.NewMockRepository()
     service := makeService(repo)
-    repo.GetAllFloatReturnValue = expectedValue
+    repo.GetAllReturnError = expectedError
 
     // When
     value, err := service.GetAll()
 
     // Then
-    require.True(t, repo.IsGetAllFloatCalled, `expected to call repo for value`)
-    require.NoError(t, err, `expected successful operation`)
-    require.Equal(t, expectedFormattedValue, value)
+    require.Empty(t, value, "expected to throw error, return value instead")
+    require.ErrorIs(t, err, expectedError, "return error type mismatch")
+
+}
+
+func Test_GetAll_HasStoredValue_Return(t *testing.T) {
+    // Given
+    expectedValue := models.Metrics{
+        ID:    "test",
+        MType: models.Counter,
+        Delta: new(int64),
+    }
+
+    repo := mocks.NewMockRepository()
+    service := makeService(repo)
+    repo.GetAllReturnValue = []*models.Metrics{&expectedValue}
+
+    // When
+    value, err := service.GetAll()
+
+    // Then
+    require.True(t, repo.IsGetAllCalled, "expected to call repo for value")
+    require.NoError(t, err, "expected successful operation")
+    require.Equal(t, []*models.Metrics{&expectedValue}, value)
 }
 
 func makeService(repo repository.MetricRepository) *Service {

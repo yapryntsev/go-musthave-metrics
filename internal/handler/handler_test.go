@@ -206,8 +206,8 @@ func makeHandler(service *mocks.MetricServiceMock) *MetricHandler {
 
 func Test_GetAllHandler_HasValue_Return(t *testing.T) {
     // Given
-    expectedName := `test`
-    expectedValue := `16`
+    expectedName := "test"
+    expectedValue := "0"
 
     r := httptest.NewRequest(http.MethodGet, "/", nil)
     w := httptest.NewRecorder()
@@ -215,8 +215,12 @@ func Test_GetAllHandler_HasValue_Return(t *testing.T) {
     service := mocks.NewServiceMock()
     handler := makeHandler(service)
 
-    service.GetAllReturnValue = map[string]string{
-        expectedName: expectedValue,
+    service.GetAllReturnValue = []*models.Metrics{
+        &models.Metrics{
+            ID:    expectedName,
+            MType: models.Counter,
+            Delta: new(int64),
+        },
     }
 
     // When
@@ -227,7 +231,7 @@ func Test_GetAllHandler_HasValue_Return(t *testing.T) {
     defer res.Body.Close()
 
     body, err := io.ReadAll(res.Body)
-    require.NoError(t, err, `failed to read response body`)
+    require.NoError(t, err, "failed to read response body")
 
     require.Equal(t, res.StatusCode, http.StatusOK)
     require.Equal(t, body, []byte(fmt.Sprintf(GetAllRowFormat, expectedName, expectedValue)))
@@ -241,7 +245,7 @@ func Test_GetAllHandler_NoValue_ReturnEmptyBody(t *testing.T) {
     service := mocks.NewServiceMock()
     handler := makeHandler(service)
 
-    service.GetAllReturnValue = map[string]string{}
+    service.GetAllReturnValue = []*models.Metrics{}
 
     // When
     handler.GetAll(w, r)

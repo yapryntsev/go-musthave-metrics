@@ -20,7 +20,7 @@ import (
 func main() {
     appLogger := newLogger(`app`)
 
-    err := parseFlags(os.Args[1:])
+    err := parseFlags(os.Args[1:], appLogger)
     if err != nil {
         appLogger.Fatal(err)
     }
@@ -58,7 +58,18 @@ func main() {
 
 func configureServer(addr string, appLog *log.Entry) *http.Server {
     appLog.Printf(`server bootstrap, address: %s`, addr)
-    metricRepo := repository.NewInMemoryRepo()
+
+    metricRepo, err := repository.NewFileRepo(
+        time.Duration(flagStoreInt),
+        flagStorePath,
+        flagRestore,
+        newLogger("repo"),
+    )
+    if err != nil {
+        appLog.Fatal(err)
+        return nil
+    }
+
     metricService := service.New(metricRepo, newLogger("service"))
     metricHandler := handler.New(metricService, newLogger("handler"))
 
@@ -83,7 +94,7 @@ func configureServer(addr string, appLog *log.Entry) *http.Server {
 
     r.Get(`/`, metricHandler.GetAll)
 
-    r.Get("/value", metricHandler.GetObject)
+    r.Post("/value", metricHandler.GetObject)
     r.Post("/value/", metricHandler.GetObject)
     r.Post("/update", metricHandler.UpdateObject)
     r.Post("/update/", metricHandler.UpdateObject)

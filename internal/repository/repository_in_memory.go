@@ -19,17 +19,29 @@ func NewInMemoryRepo() *MemoryMetricRepository {
 }
 
 func (r *MemoryMetricRepository) GetAll() ([]*models.Metrics, error) {
-    return slices.Collect(maps.Values(r.storage)), nil
+    r.mu.RLock()
+    metrics := slices.Collect(maps.Values(r.storage))
+    r.mu.RUnlock()
+
+    return metrics, nil
 }
 
 func (r *MemoryMetricRepository) Get(mID string, mType string) (*models.Metrics, error) {
     key := r.constructKey(mID, mType)
-    return r.storage[key], nil
+
+    r.mu.RLock()
+    metric := r.storage[key]
+    r.mu.RUnlock()
+
+    return metric, nil
 }
 
 func (r *MemoryMetricRepository) Set(metric *models.Metrics) error {
     key := r.keyForMetric(metric)
+
+    r.mu.Lock()
     r.storage[key] = metric
+    r.mu.Unlock()
 
     return nil
 }

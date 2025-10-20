@@ -5,12 +5,12 @@ import (
     "encoding/json"
     "errors"
     "fmt"
-    log "github.com/sirupsen/logrus"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "github.com/yapryntsev/go-musthave-metrics/internal/service/mocks"
+    "go.uber.org/zap/zaptest"
     "io"
     "net/http"
     "net/http/httptest"
@@ -37,7 +37,7 @@ func Test_GaugeHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
                 w := httptest.NewRecorder()
 
                 // When
-                handler := makeHandler(mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewServiceMock())
                 handler.Update(w, r)
 
                 // Then
@@ -70,7 +70,7 @@ func Test_CounterHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
                 w := httptest.NewRecorder()
 
                 // When
-                handler := makeHandler(mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewServiceMock())
                 handler.Update(w, r)
 
                 // Then
@@ -108,7 +108,7 @@ func Test_GaugeHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
                 r.SetPathValue(service.MetricValuePathKey, c.value)
 
                 // When
-                handler := makeHandler(mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewServiceMock())
                 handler.Update(w, r)
 
                 // Then
@@ -146,7 +146,7 @@ func Test_CounterHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
                 r.SetPathValue(service.MetricValuePathKey, c.value)
 
                 // When
-                handler := makeHandler(mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewServiceMock())
                 handler.Update(w, r)
 
                 // Then
@@ -168,7 +168,7 @@ func Test_GaugeHandler_NonFloatValue_ThrowsBadRequest(t *testing.T) {
     r.SetPathValue(service.MetricValuePathKey, "value")
 
     // When
-    handler := makeHandler(mocks.NewServiceMock())
+    handler := makeHandler(t, mocks.NewServiceMock())
     handler.Update(w, r)
 
     // Then
@@ -187,7 +187,7 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
     r.SetPathValue(service.MetricValuePathKey, "value")
 
     // When
-    handler := makeHandler(mocks.NewServiceMock())
+    handler := makeHandler(t, mocks.NewServiceMock())
     handler.Update(w, r)
 
     // Then
@@ -197,9 +197,9 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
     assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 }
 
-func makeHandler(service *mocks.MetricServiceMock) *MetricHandler {
+func makeHandler(t *testing.T, service *mocks.MetricServiceMock) *MetricHandler {
     return &MetricHandler{
-        log:     log.NewEntry(log.New()),
+        l:       zaptest.NewLogger(t),
         service: service,
     }
 }
@@ -213,7 +213,7 @@ func Test_GetAllHandler_HasValue_Return(t *testing.T) {
     w := httptest.NewRecorder()
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetAllReturnValue = []*models.Metrics{
         &models.Metrics{
@@ -243,7 +243,7 @@ func Test_GetAllHandler_NoValue_ReturnEmptyBody(t *testing.T) {
     w := httptest.NewRecorder()
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetAllReturnValue = []*models.Metrics{}
 
@@ -267,7 +267,7 @@ func Test_GetAllHandler_HasError_ThrowInternalError(t *testing.T) {
     w := httptest.NewRecorder()
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetAllReturnError = errors.New(`test error`)
 
@@ -296,7 +296,7 @@ func Test_GetValueHandler_HasValue_Return(t *testing.T) {
     r.SetPathValue(service.MetricNamePathKey, `test`)
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetReturnValue = true
     service.GetLastCallParamMutator = func(m *models.Metrics) {
@@ -326,7 +326,7 @@ func Test_GetValueHandler_HasNotValue_ThrowNotFound(t *testing.T) {
     r.SetPathValue(service.MetricNamePathKey, `test`)
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetReturnValue = false
 
@@ -353,7 +353,7 @@ func Test_GetValueHandler_HasError_ThrowInternalError(t *testing.T) {
     r.SetPathValue(service.MetricNamePathKey, `test`)
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetReturnError = errors.New("test error")
 
@@ -368,7 +368,7 @@ func Test_GetValueHandler_HasError_ThrowInternalError(t *testing.T) {
     require.NoError(t, err, `failed to read response body`)
 
     require.Equal(t, res.StatusCode, http.StatusInternalServerError)
-    require.Equal(t, body, []byte("test error\n"))
+    require.Empty(t, body)
 }
 
 func Test_GetObjectHandler_HasError_ThrowInternalError(t *testing.T) {
@@ -388,7 +388,7 @@ func Test_GetObjectHandler_HasError_ThrowInternalError(t *testing.T) {
     w := httptest.NewRecorder()
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetReturnError = errors.New("test error")
 
@@ -403,7 +403,7 @@ func Test_GetObjectHandler_HasError_ThrowInternalError(t *testing.T) {
     require.NoError(t, err, `failed to read response body`)
 
     require.Equal(t, http.StatusInternalServerError, res.StatusCode)
-    require.Equal(t, body, []byte("test error\n"))
+    require.Empty(t, body)
 }
 
 func Test_GetObjectHandler_HasNotValue_ThrowNotFound(t *testing.T) {
@@ -423,7 +423,7 @@ func Test_GetObjectHandler_HasNotValue_ThrowNotFound(t *testing.T) {
     w := httptest.NewRecorder()
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetReturnValue = false
 
@@ -468,7 +468,7 @@ func Test_GetObjectHandler_HasValue_Return(t *testing.T) {
     w := httptest.NewRecorder()
 
     service := mocks.NewServiceMock()
-    handler := makeHandler(service)
+    handler := makeHandler(t, service)
 
     service.GetReturnValue = true
     service.GetLastCallParamMutator = func(m *models.Metrics) {

@@ -2,28 +2,29 @@ package main
 
 import (
     "context"
-    log "github.com/sirupsen/logrus"
+    "fmt"
     "github.com/yapryntsev/go-musthave-metrics/internal/agent"
+    "go.uber.org/zap"
     "os"
     "os/signal"
     "syscall"
 )
 
 func main() {
-    appLog := newLog("app")
-
-    err := parseFlags(os.Args[1:], appLog)
+    l, err := zap.NewDevelopment()
     if err != nil {
-        appLog.Fatal(err)
+        panic(fmt.Errorf("failed to initiate logger: %w", err))
     }
 
-    appAgent := configureAgent(appLog)
+    parseFlags(os.Args[1:], l)
+
+    appAgent := configureAgent(l)
     ctx, cancel := context.WithCancel(context.Background())
 
     go func() {
-        appLog.Println(`agent is running`)
+        l.Debug("agent is running")
         if err := appAgent.StartGathering(ctx); err != nil {
-            appLog.Printf(`agent failed with error: %v`, err)
+            l.Error("agent failed with error", zap.Error(err))
             os.Exit(1)
         }
     }()
@@ -33,15 +34,11 @@ func main() {
 
     <-stopSignal
 
-    appLog.Println(`shutdown the agent`)
+    l.Debug("shutdown the agent")
     cancel()
 }
 
-func configureAgent(appLog *log.Entry) *agent.Agent {
-    appLog.Println("agent bootstrap")
-    return agent.New(flagAddr, flagReportInt, flagPollInt, newLog(`agent`))
-}
-
-func newLog(system string) *log.Entry {
-    return log.WithField("system", system)
+func configureAgent(l *zap.Logger) *agent.Agent {
+    l.Debug("agent bootstrap")
+    return agent.New(flagAddr, flagReportInt, flagPollInt, l)
 }

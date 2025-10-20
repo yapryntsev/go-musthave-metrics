@@ -2,7 +2,6 @@ package service
 
 import (
     "errors"
-    log "github.com/sirupsen/logrus"
     "github.com/stretchr/testify/require"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
@@ -180,7 +179,6 @@ func Test_GetAll_HasStoredValue_Return(t *testing.T) {
 
 func makeService(repo repository.MetricRepository) *Service {
     return &Service{
-        log:  log.NewEntry(log.New()),
         repo: repo,
     }
 }

@@ -2,8 +2,8 @@ package main
 
 import (
     "fmt"
-    log "github.com/sirupsen/logrus"
     "github.com/stretchr/testify/require"
+    "go.uber.org/zap/zaptest"
     "testing"
 )
 
@@ -25,7 +25,7 @@ func Test_ParseEnv(t *testing.T) {
     }
 
     // When
-    _ = parseFlags([]string{}, log.NewEntry(log.New()))
+    parseFlags([]string{}, zaptest.NewLogger(t))
 
     // Then
     for _, test := range tests {
@@ -57,7 +57,7 @@ func Test_ParseFlag(t *testing.T) {
     }
 
     // When
-    _ = parseFlags(args, log.NewEntry(log.New()))
+    parseFlags(args, zaptest.NewLogger(t))
 
     // Then
     for _, test := range tests {
@@ -81,7 +81,7 @@ func Test_PassNoFlag_SetDefault(t *testing.T) {
     }
 
     // When
-    _ = parseFlags([]string{}, log.NewEntry(log.New()))
+    parseFlags([]string{}, zaptest.NewLogger(t))
 
     // Then
     for _, test := range tests {
@@ -110,7 +110,7 @@ func Test_PassInvalidEnv_SetDefault(t *testing.T) {
     }
 
     // When
-    _ = parseFlags([]string{}, log.NewEntry(log.New()))
+    parseFlags([]string{}, zaptest.NewLogger(t))
 
     // Then
     for _, test := range tests {

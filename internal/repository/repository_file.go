@@ -4,35 +4,20 @@ import (
     "bytes"
     "encoding/json"
     "errors"
-    log "github.com/sirupsen/logrus"
+    "fmt"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+    "go.uber.org/zap"
     "os"
     "time"
 )
 
 type FileMetricRepository struct {
-    log      *log.Entry
+    l        *zap.Logger
     inMemory *MemoryMetricRepository
 
     filePath   string
     storeInt   time.Duration
     lastUpdate time.Time
-}
-
-func NewFileRepo(storeInt time.Duration, filePath string, restore bool, log *log.Entry) (*FileMetricRepository, error) {
-    repo := &FileMetricRepository{
-        log:        log,
-        inMemory:   NewInMemoryRepo(),
-        filePath:   filePath,
-        storeInt:   storeInt,
-        lastUpdate: time.Now(),
-    }
-
-    if restore {
-        repo.ReadFromFile()
-    }
-
-    return repo, nil
 }
 
 func (r *FileMetricRepository) GetAll() ([]*models.Metrics, error) {
@@ -60,44 +45,37 @@ func (r *FileMetricRepository) WriteToFile() {
     var buf bytes.Buffer
 
     r.inMemory.mu.Lock()
-    defer r.inMemory.mu.Unlock()
 
     if err := json.NewEncoder(&buf).Encode(r.inMemory.storage); err != nil {
-        r.log.WithField(
-            "err", err,
-        ).Fatal("failed to save repo state to file")
+        r.l.Fatal("failed to encode in memory storage", zap.Error(err))
     }
 
+    r.inMemory.mu.Unlock()
+
     if err := os.WriteFile(r.filePath, buf.Bytes(), 0644); err != nil {
-        r.log.WithField(
-            "err", err,
-        ).Fatal("failed to save repo state to file")
+        r.l.Fatal(fmt.Sprintf("failed to save repo state to file %s", r.filePath), zap.Error(err))
     }
 
     r.lastUpdate = time.Now()
 }
 
 func (r *FileMetricRepository) ReadFromFile() {
-    r.log.Info("restoring repo state from file")
+    r.l.Debug("restoring repo state from file")
 
     b, err := os.ReadFile(r.filePath)
     if err != nil {
         if errors.Is(err, os.ErrNotExist) {
-            r.log.Info("file does not exist")
+            r.l.Debug(fmt.Sprintf("file %s does not exists", r.filePath))
             return
         }
 
-        r.log.WithField(
-            "err", err,
-        ).Fatal("failed to restore repo state from file")
+        r.l.Fatal(fmt.Sprintf("failed to restore repo state from file %s", r.filePath), zap.Error(err))
     }
 
     r.inMemory.mu.Lock()
     defer r.inMemory.mu.Unlock()
 
     if err := json.NewDecoder(bytes.NewReader(b)).Decode(&r.inMemory.storage); err != nil {
-        r.log.WithField(
-            "err", err,
-        ).Fatal("failed to restore repo state from file")
+        r.l.Fatal(fmt.Sprintf("failed to decode repo state from file %s", r.filePath), zap.Error(err))
     }
 }

@@ -1,4 +1,4 @@
-package logger
+package middleware
 
 import (
     log "github.com/sirupsen/logrus"
@@ -6,13 +6,9 @@ import (
     "time"
 )
 
-func New(system string) *log.Entry {
-    return log.WithField("system", system)
-}
-
-func Middleware(h http.HandlerFunc, logger *log.Entry) http.HandlerFunc {
-    return http.HandlerFunc(
-        func(w http.ResponseWriter, r *http.Request) {
+func Logger(logger *log.Entry) func(next http.Handler) http.Handler {
+    return func(next http.Handler) http.Handler {
+        fn := func(w http.ResponseWriter, r *http.Request) {
             uri := r.RequestURI
             method := r.Method
 
@@ -21,7 +17,7 @@ func Middleware(h http.HandlerFunc, logger *log.Entry) http.HandlerFunc {
             }
 
             start := time.Now()
-            h(&lw, r)
+            next.ServeHTTP(&lw, r)
             duration := time.Since(start)
 
             var status int
@@ -40,8 +36,10 @@ func Middleware(h http.HandlerFunc, logger *log.Entry) http.HandlerFunc {
                     "size":     lw.data.size,
                 },
             ).Info("request handled")
-        },
-    )
+        }
+
+        return http.HandlerFunc(fn)
+    }
 }
 
 type (

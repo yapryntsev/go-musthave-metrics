@@ -8,20 +8,18 @@ import (
     "errors"
     "fmt"
     "github.com/go-resty/resty/v2"
-    log "github.com/sirupsen/logrus"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+    "go.uber.org/zap"
     "math/rand"
     "net/http"
     "runtime"
     "time"
 )
 
-var errTypeCast = errors.New("failed to cast type")
-
 type Agent struct {
     addr           string
     stats          *runtime.MemStats
-    log            *log.Entry
+    l              *zap.Logger
     client         *resty.Client
     reportInterval uint
     pollInterval   uint
@@ -31,7 +29,7 @@ type Agent struct {
     randValue float64
 }
 
-func New(addr string, reportInterval uint, pollInterval uint, log *log.Entry) *Agent {
+func New(addr string, reportInterval uint, pollInterval uint, l *zap.Logger) *Agent {
     client := http.Client{
         Timeout: 5 * time.Second,
     }
@@ -39,7 +37,7 @@ func New(addr string, reportInterval uint, pollInterval uint, log *log.Entry) *A
     return &Agent{
         addr:           addr,
         stats:          &runtime.MemStats{},
-        log:            log,
+        l:              l,
         client:         resty.NewWithClient(&client),
         reportInterval: reportInterval,
         pollInterval:   pollInterval,
@@ -69,7 +67,7 @@ func (a *Agent) scheduleMetricsFetchAndUpload(lastReportTime *time.Time) error {
     a.randValue = rand.New(rand.NewSource(seed)).Float64()
 
     runtime.ReadMemStats(a.stats)
-    a.log.Println("metric collected")
+    a.l.Debug("metric collected")
 
     if time.Since(*lastReportTime).Seconds() < float64(a.reportInterval) {
         return nil
@@ -141,13 +139,13 @@ func (a *Agent) sendMetric(t string, name string, value interface{}) error {
     case models.Counter:
         v, ok := value.(int64)
         if !ok {
-            return errTypeCast
+            return fmt.Errorf("не удалось привести значение %v к типу int64", value)
         }
         metric.Delta = &v
     case models.Gauge:
         v, ok := value.(float64)
         if !ok {
-            return errTypeCast
+            return fmt.Errorf("не удалось привести значение %v к типу float64", value)
         }
         metric.Value = &v
     }
@@ -171,13 +169,13 @@ func (a *Agent) sendMetric(t string, name string, value interface{}) error {
         Post(fmt.Sprintf("http://%s/update", a.addr))
 
     if err != nil {
-        a.log.Println(err)
+        a.l.Error("failed to send metrics", zap.Error(err))
     }
 
-    a.log.Printf("metric sent. type: %s, name: %s, value: %v", t, name, value)
+    a.l.Debug(fmt.Sprintf("metric sent. type: %s, name: %s, value: %v", t, name, value))
 
     if resp.StatusCode() != http.StatusOK {
-        a.log.Printf("unexpected status code: %d", resp.StatusCode())
+        a.l.Error("unexpected status code", zap.Int("code", resp.StatusCode()))
     }
 
     return nil

@@ -1,10 +1,10 @@
 package middleware
 
 import (
-    log "github.com/sirupsen/logrus"
-    logTest "github.com/sirupsen/logrus/hooks/test"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
+    "go.uber.org/zap"
+    "go.uber.org/zap/zaptest/observer"
     "net/http"
     "net/http/httptest"
     "testing"
@@ -17,7 +17,8 @@ func Test_MiddlewareProduceLogEntry(t *testing.T) {
     expectedStatus := http.StatusMethodNotAllowed
     expectedResponse := []byte("test body")
 
-    logger, hook := logTest.NewNullLogger()
+    observed, logs := observer.New(zap.DebugLevel)
+    logger := zap.New(observed)
 
     r := httptest.NewRequest(expectedMethod, expectedURI, nil)
     w := httptest.NewRecorder()
@@ -26,7 +27,7 @@ func Test_MiddlewareProduceLogEntry(t *testing.T) {
         _, _ = w.Write(expectedResponse)
         w.WriteHeader(expectedStatus)
     }
-    middleware := Logger(log.NewEntry(logger))
+    middleware := Logger(logger)
 
     // When
     middleware(http.HandlerFunc(handler)).ServeHTTP(w, r)
@@ -35,32 +36,34 @@ func Test_MiddlewareProduceLogEntry(t *testing.T) {
     res := w.Result()
     defer res.Body.Close()
 
-    require.NotEmpty(t, hook.Entries, "expected at least one log entry")
-    entry := hook.LastEntry()
+    require.NotEmpty(t, logs, "expected at least one log entry")
+    entry := logs.All()[0]
+    context := entry.ContextMap()
 
-    assert.Equal(t, log.InfoLevel, entry.Level)
+    assert.Equal(t, zap.DebugLevel, entry.Level)
 
-    assert.Contains(t, entry.Data, "uri")
-    assert.Contains(t, entry.Data, "method")
-    assert.Contains(t, entry.Data, "duration")
-    assert.Contains(t, entry.Data, "status")
-    assert.Contains(t, entry.Data, "size")
+    assert.Contains(t, context, "uri")
+    assert.Contains(t, context, "method")
+    assert.Contains(t, context, "duration")
+    assert.Contains(t, context, "status")
+    assert.Contains(t, context, "size")
 
-    assert.Equal(t, entry.Data["uri"], "/test")
-    assert.Equal(t, entry.Data["method"], expectedMethod)
-    assert.Equal(t, entry.Data["status"], expectedStatus)
-    assert.Equal(t, entry.Data["size"], len(expectedResponse))
+    assert.Equal(t, "/test", context["uri"])
+    assert.Equal(t, expectedMethod, context["method"])
+    assert.Equal(t, int64(expectedStatus), context["status"])
+    assert.Equal(t, int64(len(expectedResponse)), context["size"])
 }
 
 func Test_HandlerNotCallWriteHeader_TreatAsStatusOK(t *testing.T) {
     // Given
-    logger, hook := logTest.NewNullLogger()
+    observed, logs := observer.New(zap.DebugLevel)
+    logger := zap.New(observed)
 
     r := httptest.NewRequest(http.MethodPost, "/test", nil)
     w := httptest.NewRecorder()
 
     handler := func(w http.ResponseWriter, r *http.Request) {}
-    middleware := Logger(log.NewEntry(logger))
+    middleware := Logger(logger)
 
     // When
     middleware(http.HandlerFunc(handler)).ServeHTTP(w, r)
@@ -69,9 +72,10 @@ func Test_HandlerNotCallWriteHeader_TreatAsStatusOK(t *testing.T) {
     res := w.Result()
     defer res.Body.Close()
 
-    require.NotEmpty(t, hook.Entries, "expected at least one log entry")
-    entry := hook.LastEntry()
+    require.NotEmpty(t, logs, "expected at least one log entry")
+    entry := logs.All()[0]
+    context := entry.ContextMap()
 
-    assert.Contains(t, entry.Data, "status")
-    assert.Equal(t, entry.Data["status"], http.StatusOK)
+    assert.Contains(t, context, "status")
+    assert.Equal(t, int64(http.StatusOK), context["status"])
 }

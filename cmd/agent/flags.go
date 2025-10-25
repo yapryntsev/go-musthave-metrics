@@ -2,7 +2,8 @@ package main
 
 import (
     "flag"
-    log "github.com/sirupsen/logrus"
+    "fmt"
+    "go.uber.org/zap"
     "os"
     "strconv"
 )
@@ -27,7 +28,7 @@ var (
     flagPollInt   uint
 )
 
-func parseFlags(args []string, l *log.Entry) error {
+func parseFlags(args []string, l *zap.Logger) {
     fs := flag.NewFlagSet("flags", flag.ExitOnError)
 
     fs.StringVar(&flagAddr, flagAddrKey, flagAddrDefault, `server endpoint`)
@@ -41,30 +42,28 @@ func parseFlags(args []string, l *log.Entry) error {
 
     err := fs.Parse(args)
     if err != nil {
-        return err
+        l.Fatal("failed to parse flags", zap.Error(err))
     }
 
-    if envAddr := os.Getenv(envAddrKey); envAddr != "" {
+    if envAddr, ok := os.LookupEnv(envAddrKey); ok {
         flagAddr = envAddr
     }
 
-    if envReportInt := os.Getenv(envReportIntKey); envReportInt != "" {
+    if envReportInt, ok := os.LookupEnv(envReportIntKey); ok {
         f, err := strconv.Atoi(envReportInt)
         if err != nil {
-            l.Printf("failed to parse env value: %s", envReportIntKey)
+            l.Error(fmt.Sprintf("failed to parse env value: %s", envReportInt))
         } else {
             flagReportInt = uint(f)
         }
     }
 
-    if envPollInt := os.Getenv(envPollIntKey); envPollInt != "" {
+    if envPollInt, ok := os.LookupEnv(envPollIntKey); ok {
         f, err := strconv.Atoi(envPollInt)
         if err != nil {
-            l.Printf("failed to parse env value: %s", envPollIntKey)
+            l.Error(fmt.Sprintf("failed to parse env value: %s", envPollIntKey))
         } else {
             flagPollInt = uint(f)
         }
     }
-
-    return nil
 }

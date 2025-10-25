@@ -1,16 +1,29 @@
 package repository
 
-import "errors"
-
-var ErrValueNotFound = errors.New(`metric value not found`)
+import (
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+    "go.uber.org/zap"
+    "time"
+)
 
 type MetricRepository interface {
-    GetAllFloat() (map[string]float64, error)
-    GetAllInt() (map[string]int64, error)
+    GetAll() ([]*models.Metrics, error)
+    Get(mID string, mType string) (*models.Metrics, error)
+    Set(metric *models.Metrics) error
+}
 
-    GetFloat(name string) (float64, error)
-    GetInt(name string) (int64, error)
+func New(storeInt time.Duration, filePath string, restore bool, l *zap.Logger) MetricRepository {
+    repo := &FileMetricRepository{
+        l:          l,
+        inMemory:   NewInMemoryRepo(),
+        filePath:   filePath,
+        storeInt:   storeInt,
+        lastUpdate: time.Now(),
+    }
 
-    SetFloat(name string, value float64) error
-    SetInt(name string, value int64) error
+    if restore {
+        repo.ReadFromFile()
+    }
+
+    return repo
 }

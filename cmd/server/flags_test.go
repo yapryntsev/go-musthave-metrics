@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "github.com/stretchr/testify/require"
+    "go.uber.org/zap/zaptest"
     "testing"
 )
 
@@ -14,6 +15,9 @@ func Test_ParseEnv(t *testing.T) {
         actual   func() interface{}
     }{
         {envAddrKey, ":8080", ":8080", func() interface{} { return flagAddr }},
+        {envStoreIntKey, "120", uint(120), func() interface{} { return flagStoreInt }},
+        {envStorePathKey, "/test", "/test", func() interface{} { return flagStorePath }},
+        {envRestoreKey, "false", false, func() interface{} { return flagRestore }},
     }
 
     // Given
@@ -22,7 +26,7 @@ func Test_ParseEnv(t *testing.T) {
     }
 
     // When
-    _ = parseFlags([]string{})
+    parseFlags([]string{}, zaptest.NewLogger(t))
 
     // Then
     for _, test := range tests {
@@ -42,6 +46,9 @@ func Test_ParseFlag(t *testing.T) {
         actual   func() interface{}
     }{
         {flagAddrKey, ":1111", ":1111", func() interface{} { return flagAddr }},
+        {flagStoreIntKey, "120", uint(120), func() interface{} { return flagStoreInt }},
+        {flagStorePathKey, "/test", "/test", func() interface{} { return flagStorePath }},
+        {flagRestoreKey, "false", false, func() interface{} { return flagRestore }},
     }
 
     // Given
@@ -52,7 +59,7 @@ func Test_ParseFlag(t *testing.T) {
     }
 
     // When
-    _ = parseFlags(args)
+    parseFlags(args, zaptest.NewLogger(t))
 
     // Then
     for _, test := range tests {
@@ -71,10 +78,13 @@ func Test_PassNoFlag_SetDefault(t *testing.T) {
         actual   func() interface{}
     }{
         {flagAddrKey, flagAddrDefault, func() interface{} { return flagAddr }},
+        {flagStoreIntKey, flagStoreIntDefault, func() interface{} { return flagStoreInt }},
+        {flagStorePathKey, flagStorePathDefault, func() interface{} { return flagStorePath }},
+        {flagRestoreKey, flagRestoreDefault, func() interface{} { return flagRestore }},
     }
 
     // When
-    _ = parseFlags([]string{})
+    parseFlags([]string{}, zaptest.NewLogger(t))
 
     // Then
     for _, test := range tests {

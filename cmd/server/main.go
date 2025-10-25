@@ -5,11 +5,11 @@ import (
     "fmt"
     "github.com/go-chi/chi/v5"
     chiMiddleware "github.com/go-chi/chi/v5/middleware"
-    log "github.com/sirupsen/logrus"
     "github.com/yapryntsev/go-musthave-metrics/internal/handler"
     "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
+    "go.uber.org/zap"
     "net/http"
     "os"
     "os/signal"
@@ -17,21 +17,19 @@ import (
     "time"
 )
 
+var logger *zap.Logger
+
 func main() {
-    appLogger := newLogger(`app`)
+    setupLogger()
+    parseFlags(os.Args[1:], logger)
 
-    err := parseFlags(os.Args[1:])
-    if err != nil {
-        appLogger.Fatal(err)
-    }
-
-    server := configureServer(flagAddr, appLogger)
+    server := configureServer(flagAddr, logger)
 
     serverError := make(chan error, 1)
     stopSignal := make(chan os.Signal, 1)
 
     go func() {
-        appLogger.Trace(`server is running`)
+        logger.Debug("server is running")
         if err := server.ListenAndServe(); err != nil {
             serverError <- err
         }
@@ -41,32 +39,36 @@ func main() {
 
     select {
     case err := <-serverError:
-        log.Printf(`shutdown with server error: %v`, err)
+        logger.Debug("shutdown with server error", zap.Error(err))
     case sig := <-stopSignal:
-        log.Printf(`shutdown with os signal: %v`, sig)
+        logger.Debug(fmt.Sprintf("shutdown with os signal: %v", sig))
     }
 
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
 
     if err := server.Shutdown(ctx); err != nil {
-        log.Printf(`failed to gracefully shutdown server with error: %v`, err)
+        logger.Error("failed to gracefully shutdown server with error", zap.Error(err))
     }
 
-    log.Println(`server terminated`)
+    logger.Debug("server terminated")
 }
 
-func configureServer(addr string, appLog *log.Entry) *http.Server {
-    appLog.Printf(`server bootstrap, address: %s`, addr)
-    metricRepo := repository.NewInMemoryRepo()
-    metricService := service.New(metricRepo, newLogger("service"))
-    metricHandler := handler.New(metricService, newLogger("handler"))
+func configureServer(addr string, l *zap.Logger) *http.Server {
+    l.Debug(fmt.Sprintf("server bootstrap, address: %s", addr))
 
-    handlersLogger := newLogger("handler")
+    metricRepo := repository.New(
+        time.Duration(flagStoreInt),
+        flagStorePath,
+        flagRestore,
+        l,
+    )
+    metricService := service.New(metricRepo)
+    metricHandler := handler.New(metricService, l)
 
     r := chi.NewRouter()
-    r.Use(middleware.Logger(handlersLogger))
-    r.Use(middleware.Compress(newLogger("compress-middleware")))
+    r.Use(middleware.Logger(l))
+    r.Use(middleware.Compress(l))
     r.Use(chiMiddleware.Timeout(5 * time.Second))
 
     getValueEndpoint := fmt.Sprintf(
@@ -83,7 +85,7 @@ func configureServer(addr string, appLog *log.Entry) *http.Server {
 
     r.Get(`/`, metricHandler.GetAll)
 
-    r.Get("/value", metricHandler.GetObject)
+    r.Post("/value", metricHandler.GetObject)
     r.Post("/value/", metricHandler.GetObject)
     r.Post("/update", metricHandler.UpdateObject)
     r.Post("/update/", metricHandler.UpdateObject)
@@ -91,7 +93,7 @@ func configureServer(addr string, appLog *log.Entry) *http.Server {
     r.Get(getValueEndpoint, metricHandler.GetValue)
     r.Post(updateValueEndpoint, metricHandler.Update)
 
-    appLog.Println(`handlers registered`)
+    l.Debug("handlers registered")
 
     return &http.Server{
         Addr:         addr,
@@ -102,6 +104,11 @@ func configureServer(addr string, appLog *log.Entry) *http.Server {
     }
 }
 
-func newLogger(scope string) *log.Entry {
-    return log.WithField("scope", scope)
+func setupLogger() {
+    var err error
+
+    logger, err = zap.NewDevelopment()
+    if err != nil {
+        panic(fmt.Errorf("failed to initiate logger: %w", err))
+    }
 }

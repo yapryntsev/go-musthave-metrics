@@ -6,7 +6,7 @@ import (
 
 type MetricServiceMock struct {
     IsGetAllCalled    bool
-    GetAllReturnValue map[string]string
+    GetAllReturnValue []*models.Metrics
     GetAllReturnError error
 
     IsGetCalled             bool
@@ -30,7 +30,7 @@ func NewServiceMock() *MetricServiceMock {
     return &MetricServiceMock{}
 }
 
-func (m *MetricServiceMock) GetAll() (map[string]string, error) {
+func (m *MetricServiceMock) GetAll() ([]*models.Metrics, error) {
     m.IsGetAllCalled = true
     return m.GetAllReturnValue, m.GetAllReturnError
 }
@@ -46,16 +46,16 @@ func (m *MetricServiceMock) Get(metric *models.Metrics) (bool, error) {
     return m.GetReturnValue, m.GetReturnError
 }
 
-func (m *MetricServiceMock) UpdateCounter(name string, value int64) error {
+func (m *MetricServiceMock) UpdateCounter(mID string, value int64) error {
     m.IsUpdateCounterCalled = true
-    m.UpdateCounterLastCallNameParam = name
+    m.UpdateCounterLastCallNameParam = mID
     m.UpdateCounterLastCallValueParam = value
     return m.UpdateCounterReturnError
 }
 
-func (m *MetricServiceMock) UpdateGauge(name string, value float64) error {
+func (m *MetricServiceMock) UpdateGauge(mID string, value float64) error {
     m.IsUpdateGaugeCalled = true
-    m.UpdateGaugeLastCallNameParam = name
+    m.UpdateGaugeLastCallNameParam = mID
     m.UpdateGaugeLastCallValueParam = value
     return m.UpdateGaugeReturnError
 }

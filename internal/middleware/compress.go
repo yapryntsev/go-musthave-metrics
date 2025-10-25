@@ -3,20 +3,20 @@ package middleware
 import (
     "compress/gzip"
     "fmt"
-    log "github.com/sirupsen/logrus"
+    "go.uber.org/zap"
     "io"
     "net/http"
     "strings"
 )
 
-func Compress(logger *log.Entry) func(next http.Handler) http.Handler {
+func Compress(l *zap.Logger) func(next http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         fn := func(w http.ResponseWriter, r *http.Request) {
             if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
                 zr, err := gzip.NewReader(r.Body)
                 if err != nil {
                     w.WriteHeader(http.StatusInternalServerError)
-                    logger.WithField("err", err.Error()).Error("failed to create gzip reader")
+                    l.Error("failed to create gzip reader", zap.Error(err))
 
                     return
                 }

@@ -1,12 +1,12 @@
 package middleware
 
 import (
-    log "github.com/sirupsen/logrus"
+    "go.uber.org/zap"
     "net/http"
     "time"
 )
 
-func Logger(logger *log.Entry) func(next http.Handler) http.Handler {
+func Logger(l *zap.Logger) func(next http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         fn := func(w http.ResponseWriter, r *http.Request) {
             uri := r.RequestURI
@@ -27,15 +27,14 @@ func Logger(logger *log.Entry) func(next http.Handler) http.Handler {
                 status = lw.data.status
             }
 
-            logger.WithFields(
-                log.Fields{
-                    "uri":      uri,
-                    "method":   method,
-                    "duration": duration,
-                    "status":   status,
-                    "size":     lw.data.size,
-                },
-            ).Info("request handled")
+            l.Debug(
+                "request handled",
+                zap.String("uri", uri),
+                zap.String("method", method),
+                zap.Duration("duration", duration),
+                zap.Int("status", status),
+                zap.Int("size", lw.data.size),
+            )
         }
 
         return http.HandlerFunc(fn)

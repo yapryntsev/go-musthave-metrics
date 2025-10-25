@@ -3,8 +3,8 @@ package handler
 import (
     "bytes"
     "fmt"
+    log "github.com/sirupsen/logrus"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
-    "log"
     "net/http"
     "strconv"
 )
@@ -12,11 +12,11 @@ import (
 const GetAllRowFormat = "%s: %s\n"
 
 type MetricHandler struct {
-    log     *log.Logger
+    log     *log.Entry
     service service.MetricService
 }
 
-func New(service service.MetricService, log *log.Logger,) MetricHandler {
+func New(service service.MetricService, log *log.Entry) MetricHandler {
     return MetricHandler{log: log, service: service}
 }
 

@@ -4,7 +4,7 @@ import (
     "errors"
     "fmt"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
-    "log"
+    log "github.com/sirupsen/logrus"
     "strconv"
 )
 
@@ -24,11 +24,11 @@ type MetricService interface {
 }
 
 type Service struct {
-    log  *log.Logger
+    log  *log.Entry
     repo repository.MetricRepository
 }
 
-func New(repo repository.MetricRepository, log *log.Logger) *Service {
+func New(repo repository.MetricRepository, log *log.Entry) *Service {
     return &Service{
         log:  log,
         repo: repo,

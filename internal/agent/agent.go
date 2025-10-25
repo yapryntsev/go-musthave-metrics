@@ -5,7 +5,7 @@ import (
     "errors"
     "fmt"
     "github.com/go-resty/resty/v2"
-    "log"
+    log "github.com/sirupsen/logrus"
     "math/rand"
     "net/http"
     "runtime"
@@ -16,7 +16,7 @@ import (
 type Agent struct {
     addr           string
     stats          *runtime.MemStats
-    log            *log.Logger
+    log            *log.Entry
     client         *resty.Client
     reportInterval uint
     pollInterval   uint
@@ -26,7 +26,7 @@ type Agent struct {
     randValue float64
 }
 
-func New(addr string, reportInterval uint, pollInterval uint, log *log.Logger) *Agent {
+func New(addr string, reportInterval uint, pollInterval uint, log *log.Entry) *Agent {
     client := http.Client{
         Timeout: 5 * time.Second,
     }

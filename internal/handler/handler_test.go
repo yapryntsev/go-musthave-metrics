@@ -1,11 +1,14 @@
 package handler
 
 import (
+    "bytes"
+    "encoding/json"
     "errors"
     "fmt"
     log "github.com/sirupsen/logrus"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "github.com/yapryntsev/go-musthave-metrics/internal/service/mocks"
     "io"
@@ -35,7 +38,7 @@ func Test_GaugeHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.updateGauge(w, r)
+                handler.Update(w, r)
 
                 // Then
                 res := w.Result()
@@ -68,7 +71,7 @@ func Test_CounterHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.updateCounter(w, r)
+                handler.Update(w, r)
 
                 // Then
                 res := w.Result()
@@ -106,7 +109,7 @@ func Test_GaugeHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.updateGauge(w, r)
+                handler.Update(w, r)
 
                 // Then
                 res := w.Result()
@@ -144,7 +147,7 @@ func Test_CounterHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
 
                 // When
                 handler := makeHandler(mocks.NewServiceMock())
-                handler.updateCounter(w, r)
+                handler.Update(w, r)
 
                 // Then
                 res := w.Result()
@@ -166,7 +169,7 @@ func Test_GaugeHandler_NonFloatValue_ThrowsBadRequest(t *testing.T) {
 
     // When
     handler := makeHandler(mocks.NewServiceMock())
-    handler.updateGauge(w, r)
+    handler.Update(w, r)
 
     // Then
     res := w.Result()
@@ -185,7 +188,7 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
 
     // When
     handler := makeHandler(mocks.NewServiceMock())
-    handler.updateGauge(w, r)
+    handler.Update(w, r)
 
     // Then
     res := w.Result()
@@ -280,7 +283,7 @@ func Test_GetAllHandler_HasError_ThrowInternalError(t *testing.T) {
 
 func Test_GetValueHandler_HasValue_Return(t *testing.T) {
     // Given
-    expectedValue := `1400`
+    expectedValue := float64(1400)
 
     r := httptest.NewRequest(http.MethodGet, "/value/gauge/test", nil)
     w := httptest.NewRecorder()
@@ -291,7 +294,10 @@ func Test_GetValueHandler_HasValue_Return(t *testing.T) {
     service := mocks.NewServiceMock()
     handler := makeHandler(service)
 
-    service.GetReturnValue = expectedValue
+    service.GetReturnValue = true
+    service.GetLastCallParamMutator = func(m *models.Metrics) {
+        m.Value = &expectedValue
+    }
 
     // When
     handler.GetValue(w, r)
@@ -304,10 +310,10 @@ func Test_GetValueHandler_HasValue_Return(t *testing.T) {
     require.NoError(t, err, `failed to read response body`)
 
     require.Equal(t, res.StatusCode, http.StatusOK)
-    require.Equal(t, body, []byte(expectedValue))
+    require.Equal(t, body, []byte("1400"))
 }
 
-func Test_GetValueHandler_HasValue_ThrowNotFound(t *testing.T) {
+func Test_GetValueHandler_HasNotValue_ThrowNotFound(t *testing.T) {
     // Given
     r := httptest.NewRequest(http.MethodGet, "/value/gauge/test", nil)
     w := httptest.NewRecorder()
@@ -318,7 +324,7 @@ func Test_GetValueHandler_HasValue_ThrowNotFound(t *testing.T) {
     service := mocks.NewServiceMock()
     handler := makeHandler(service)
 
-    service.GetReturnValue = ``
+    service.GetReturnValue = false
 
     // When
     handler.GetValue(w, r)
@@ -345,7 +351,7 @@ func Test_GetValueHandler_HasError_ThrowInternalError(t *testing.T) {
     service := mocks.NewServiceMock()
     handler := makeHandler(service)
 
-    service.GetReturnError = errors.New(`test error`)
+    service.GetReturnError = errors.New("test error")
 
     // When
     handler.GetValue(w, r)
@@ -358,5 +364,123 @@ func Test_GetValueHandler_HasError_ThrowInternalError(t *testing.T) {
     require.NoError(t, err, `failed to read response body`)
 
     require.Equal(t, res.StatusCode, http.StatusInternalServerError)
-    require.Equal(t, body, []byte(``))
+    require.Equal(t, body, []byte("test error\n"))
+}
+
+func Test_GetObjectHandler_HasError_ThrowInternalError(t *testing.T) {
+    // Given
+    requestBody, err := json.Marshal(
+        models.Metrics{
+            ID:    "test",
+            MType: "gauge",
+        },
+    )
+
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    r := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(requestBody))
+    w := httptest.NewRecorder()
+
+    service := mocks.NewServiceMock()
+    handler := makeHandler(service)
+
+    service.GetReturnError = errors.New("test error")
+
+    // When
+    handler.GetObject(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    body, err := io.ReadAll(res.Body)
+    require.NoError(t, err, `failed to read response body`)
+
+    require.Equal(t, http.StatusInternalServerError, res.StatusCode)
+    require.Equal(t, body, []byte("test error\n"))
+}
+
+func Test_GetObjectHandler_HasNotValue_ThrowNotFound(t *testing.T) {
+    // Given
+    requestBody, err := json.Marshal(
+        models.Metrics{
+            ID:    "test",
+            MType: "gauge",
+        },
+    )
+
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    r := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(requestBody))
+    w := httptest.NewRecorder()
+
+    service := mocks.NewServiceMock()
+    handler := makeHandler(service)
+
+    service.GetReturnValue = false
+
+    // When
+    handler.GetObject(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    body, err := io.ReadAll(res.Body)
+    require.NoError(t, err, `failed to read response body`)
+
+    require.Equal(t, http.StatusNotFound, res.StatusCode)
+    require.Equal(t, []byte(``), body)
+}
+
+func Test_GetObjectHandler_HasValue_Return(t *testing.T) {
+    // Given
+    expectedValue := float64(1400)
+    expectedMetric := models.Metrics{
+        ID:    "test",
+        MType: "gauge",
+        Value: &expectedValue,
+    }
+    expectedResp, err := json.Marshal(expectedMetric)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    requestBody, err := json.Marshal(
+        models.Metrics{
+            ID:    "test",
+            MType: "gauge",
+        },
+    )
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    r := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(requestBody))
+    w := httptest.NewRecorder()
+
+    service := mocks.NewServiceMock()
+    handler := makeHandler(service)
+
+    service.GetReturnValue = true
+    service.GetLastCallParamMutator = func(m *models.Metrics) {
+        m.Value = &expectedValue
+    }
+
+    // When
+    handler.GetObject(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    body, err := io.ReadAll(res.Body)
+    require.NoError(t, err, `failed to read response body`)
+
+    require.Equal(t, http.StatusOK, res.StatusCode)
+    require.Equal(t, string(expectedResp)+"\n", string(body))
 }

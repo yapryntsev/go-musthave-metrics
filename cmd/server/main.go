@@ -80,6 +80,12 @@ func configureServer(addr string, appLog *log.Entry) *http.Server {
     handlersLogger := logger.New("handler")
 
     r.Get(`/`, logger.Middleware(metricHandler.GetAll, handlersLogger))
+
+    r.Get("/value", logger.Middleware(metricHandler.GetObject, handlersLogger))
+    r.Post("/value/", logger.Middleware(metricHandler.GetObject, handlersLogger))
+    r.Post("/update", logger.Middleware(metricHandler.UpdateObject, handlersLogger))
+    r.Post("/update/", logger.Middleware(metricHandler.UpdateObject, handlersLogger))
+
     r.Get(getValueEndpoint, logger.Middleware(metricHandler.GetValue, handlersLogger))
     r.Post(updateValueEndpoint, logger.Middleware(metricHandler.Update, handlersLogger))
 

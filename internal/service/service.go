@@ -3,22 +3,21 @@ package service
 import (
     "errors"
     "fmt"
-    "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     log "github.com/sirupsen/logrus"
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+    "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "strconv"
 )
 
 const (
-    MetricTypePathKey     = `type`
-    MetricNamePathKey     = `name`
-    MetricValuePathKey    = `value`
-    GaugeMetricTypeName   = `gauge`
-    CounterMetricTypeName = `counter`
+    MetricTypePathKey  = `type`
+    MetricNamePathKey  = `name`
+    MetricValuePathKey = `value`
 )
 
 type MetricService interface {
     GetAll() (map[string]string, error)
-    Get(metricType string, name string) (string, error)
+    Get(metric *models.Metrics) (bool, error)
     UpdateCounter(name string, value int64) error
     UpdateGauge(name string, value float64) error
 }
@@ -60,31 +59,34 @@ func (s *Service) GetAll() (map[string]string, error) {
     return res, nil
 }
 
-func (s *Service) Get(metricType string, name string) (string, error) {
-    var res string
+func (s *Service) Get(metric *models.Metrics) (bool, error) {
     var err error
 
-    switch metricType {
-    case CounterMetricTypeName:
+    switch metric.MType {
+    case models.Counter:
         var v int64
-        v, err = s.repo.GetInt(name)
+        v, err = s.repo.GetInt(metric.ID)
         if err == nil {
-            res = strconv.Itoa(int(v))
+            metric.Delta = &v
         }
-    case GaugeMetricTypeName:
+    case models.Gauge:
         var v float64
-        v, err = s.repo.GetFloat(name)
+        v, err = s.repo.GetFloat(metric.ID)
         if err == nil {
-            res = strconv.FormatFloat(v, 'f', -1, 64)
+            metric.Value = &v
         }
     }
 
-    if err != nil && !errors.Is(err, repository.ErrValueNotFound) {
+    if err != nil {
+        if errors.Is(err, repository.ErrValueNotFound) {
+            return false, nil
+        }
+
         s.log.Printf("failed to fetch counter metric: %s", err.Error())
-        return ``, err
+        return false, err
     }
 
-    return res, nil
+    return true, nil
 }
 
 func (s *Service) UpdateCounter(name string, value int64) error {

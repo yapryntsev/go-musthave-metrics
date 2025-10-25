@@ -6,12 +6,14 @@ import (
     "fmt"
     "github.com/go-resty/resty/v2"
     log "github.com/sirupsen/logrus"
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "math/rand"
     "net/http"
     "runtime"
-    "strconv"
     "time"
 )
+
+var errTypeCast = errors.New("failed to cast type")
 
 type Agent struct {
     addr           string
@@ -82,63 +84,85 @@ func (a *Agent) sendMetrics() error {
         name  string
         value float64
     }{
-        {"random-value", a.randValue},
-        {"alloc", float64(stats.Alloc)},
-        {"buck-hash-sys", float64(stats.BuckHashSys)},
-        {"frees", float64(stats.Frees)},
-        {"gc-cpu-fraction", float64(stats.GCCPUFraction)},
-        {"gc-sys", float64(stats.GCSys)},
-        {"heap-alloc", float64(stats.HeapAlloc)},
-        {"heap-idle", float64(stats.HeapIdle)},
-        {"heap-inuse", float64(stats.HeapInuse)},
-        {"heap-objects", float64(stats.HeapObjects)},
-        {"heap-released", float64(stats.HeapReleased)},
-        {"heap-sys", float64(stats.HeapSys)},
-        {"last-gc", float64(stats.LastGC)},
-        {"lookups", float64(stats.Lookups)},
-        {"m-cache-inuse", float64(stats.MCacheInuse)},
-        {"m-cache-sys", float64(stats.MCacheSys)},
-        {"m-span-inuse", float64(stats.MSpanInuse)},
-        {"m-span-sys", float64(stats.MSpanSys)},
-        {"mallocs", float64(stats.Mallocs)},
-        {"next-gc", float64(stats.NextGC)},
-        {"num-forced-gc", float64(stats.NumForcedGC)},
-        {"num-gc", float64(stats.NumGC)},
-        {"other-sys", float64(stats.OtherSys)},
-        {"pause-total-ns", float64(stats.PauseTotalNs)},
-        {"stack-inuse", float64(stats.StackInuse)},
-        {"stack-sys", float64(stats.StackSys)},
-        {"sys", float64(stats.Sys)},
-        {"total-alloc", float64(stats.TotalAlloc)},
+        {"RandomValue", a.randValue},
+        {"Alloc", float64(stats.Alloc)},
+        {"BuckHashSys", float64(stats.BuckHashSys)},
+        {"Frees", float64(stats.Frees)},
+        {"GCCPUFraction", float64(stats.GCCPUFraction)},
+        {"GCSys", float64(stats.GCSys)},
+        {"HeapAlloc", float64(stats.HeapAlloc)},
+        {"HeapIdle", float64(stats.HeapIdle)},
+        {"HeapInuse", float64(stats.HeapInuse)},
+        {"HeapObjects", float64(stats.HeapObjects)},
+        {"HeapReleased", float64(stats.HeapReleased)},
+        {"HeapSys", float64(stats.HeapSys)},
+        {"LastGC", float64(stats.LastGC)},
+        {"Lookups", float64(stats.Lookups)},
+        {"MCacheInuse", float64(stats.MCacheInuse)},
+        {"MCacheSys", float64(stats.MCacheSys)},
+        {"MSpanInuse", float64(stats.MSpanInuse)},
+        {"MSpanSys", float64(stats.MSpanSys)},
+        {"Mallocs", float64(stats.Mallocs)},
+        {"NextGC", float64(stats.NextGC)},
+        {"NumForcedGC", float64(stats.NumForcedGC)},
+        {"NumGC", float64(stats.NumGC)},
+        {"OtherSys", float64(stats.OtherSys)},
+        {"PauseTotalNs", float64(stats.PauseTotalNs)},
+        {"StackInuse", float64(stats.StackInuse)},
+        {"StackSys", float64(stats.StackSys)},
+        {"Sys", float64(stats.Sys)},
+        {"TotalAlloc", float64(stats.TotalAlloc)},
     }
 
     for _, m := range gaugeMetrics {
-        err := a.sendMetric("gauge", m.name, fmt.Sprintf("%.2f", m.value))
+        err := a.sendMetric(models.Gauge, m.name, m.value)
         if err != nil {
             return err
         }
     }
 
-    return a.sendMetric("counter", "poll-count", strconv.Itoa(a.pollCount))
+    return a.sendMetric(models.Counter, "PollCount", int64(a.pollCount))
 }
 
-func (a *Agent) sendMetric(t string, name string, value string) error {
+func (a *Agent) sendMetric(t string, name string, value interface{}) error {
     if len(a.addr) == 0 {
         return errors.New("host must be configured")
     }
 
+    metric := models.Metrics{
+        ID:    name,
+        MType: t,
+    }
+
+    switch t {
+    case models.Counter:
+        v, ok := value.(int64)
+        if !ok {
+            return errTypeCast
+        }
+        metric.Delta = &v
+    case models.Gauge:
+        v, ok := value.(float64)
+        if !ok {
+            return errTypeCast
+        }
+        metric.Value = &v
+    }
+
     resp, err := a.client.R().
-        SetHeader(`Content-Type`, `text/plain`).
-        Post(fmt.Sprintf(`http://%s/update/%s/%s/%s`, a.addr, t, name, value))
+        SetHeader("Content-Type", "application/json").
+        SetBody(metric).
+        Post(fmt.Sprintf("http://%s/update", a.addr))
 
     if err != nil {
-        return err
+        a.log.Println(err)
     }
+
+    a.log.Printf("metric sent. type: %s, name: %s, value: %v", t, name, value)
 
     if resp.StatusCode() != http.StatusOK {
-        return fmt.Errorf(`unexpected status code d: %d`, resp.StatusCode())
+        a.log.Printf("unexpected status code: %d", resp.StatusCode())
     }
 
-    a.log.Printf(`metric sent. type: %s, name: %s, value: %s`, t, name, value)
     return nil
 }

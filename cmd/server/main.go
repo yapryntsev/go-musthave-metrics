@@ -5,6 +5,7 @@ import (
     "fmt"
     "github.com/go-chi/chi/v5"
     chiMiddleware "github.com/go-chi/chi/v5/middleware"
+    "github.com/yapryntsev/go-musthave-metrics/internal/config/db"
     "github.com/yapryntsev/go-musthave-metrics/internal/handler"
     "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
@@ -51,11 +52,21 @@ func main() {
         logger.Error("failed to gracefully shutdown server with error", zap.Error(err))
     }
 
+    if err := db.CloseConnection(); err != nil {
+        logger.Error("failed to close connection to db", zap.Error(err))
+    }
+
     logger.Debug("server terminated")
 }
 
 func configureServer(addr string, l *zap.Logger) *http.Server {
     l.Debug(fmt.Sprintf("server bootstrap, address: %s", addr))
+
+    db, err := db.NewConnection()
+    if err != nil {
+        l.Fatal("failed to create connection to db", zap.Error(err))
+        return nil
+    }
 
     metricRepo := repository.New(
         time.Duration(flagStoreInt),
@@ -64,7 +75,7 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
         l,
     )
     metricService := service.New(metricRepo)
-    metricHandler := handler.New(metricService, l)
+    metricHandler := handler.New(metricService, db, l)
 
     r := chi.NewRouter()
     r.Use(middleware.Logger(l))
@@ -83,7 +94,8 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
         service.MetricValuePathKey,
     )
 
-    r.Get(`/`, metricHandler.GetAll)
+    r.Get("/", metricHandler.GetAll)
+    r.Get("/ping", metricHandler.Ping)
 
     r.Post("/value", metricHandler.GetObject)
     r.Post("/value/", metricHandler.GetObject)

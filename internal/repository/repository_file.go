@@ -20,6 +20,22 @@ type FileMetricRepository struct {
     lastUpdate time.Time
 }
 
+func newFileRepository(storeInt time.Duration, filePath string, restore bool, l *zap.Logger) *FileMetricRepository {
+    repo := &FileMetricRepository{
+        l:          l,
+        inMemory:   newInMemoryRepo(),
+        filePath:   filePath,
+        storeInt:   storeInt,
+        lastUpdate: time.Now(),
+    }
+
+    if restore {
+        repo.ReadFromFile()
+    }
+
+    return repo
+}
+
 func (r *FileMetricRepository) GetAll() ([]*models.Metrics, error) {
     return r.inMemory.GetAll()
 }

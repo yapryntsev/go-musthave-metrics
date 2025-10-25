@@ -1,6 +1,7 @@
 package repository
 
 import (
+    "database/sql"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "go.uber.org/zap"
     "time"
@@ -12,18 +13,10 @@ type MetricRepository interface {
     Set(metric *models.Metrics) error
 }
 
-func New(storeInt time.Duration, filePath string, restore bool, l *zap.Logger) MetricRepository {
-    repo := &FileMetricRepository{
-        l:          l,
-        inMemory:   NewInMemoryRepo(),
-        filePath:   filePath,
-        storeInt:   storeInt,
-        lastUpdate: time.Now(),
+func New(db *sql.DB, storeInt time.Duration, filePath string, restore bool, l *zap.Logger) MetricRepository {
+    if db != nil {
+        return newDatabaseRepository(db, l)
     }
 
-    if restore {
-        repo.ReadFromFile()
-    }
-
-    return repo
+    return newFileRepository(storeInt, filePath, restore, l)
 }

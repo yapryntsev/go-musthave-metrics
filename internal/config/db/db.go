@@ -7,13 +7,17 @@ import (
 
 var dbConnection *sql.DB
 
-func NewConnection() (*sql.DB, error) {
-    db, err := sql.Open("pgx", "host=localhost user=ya dbname=metrics sslmode=disable")
+func NewConnection(dsn string) (*sql.DB, error) {
+    db, err := sql.Open("pgx", dsn)
     dbConnection = db
 
     return db, err
 }
 
 func CloseConnection() error {
-    return dbConnection.Close()
+    if dbConnection != nil {
+        return dbConnection.Close()
+    }
+
+    return nil
 }

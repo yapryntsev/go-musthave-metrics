@@ -2,6 +2,7 @@ package main
 
 import (
     "context"
+    "database/sql"
     "fmt"
     "github.com/go-chi/chi/v5"
     chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -62,7 +63,12 @@ func main() {
 func configureServer(addr string, l *zap.Logger) *http.Server {
     l.Debug(fmt.Sprintf("server bootstrap, address: %s", addr))
 
-    db, err := db.NewConnection()
+    var appDB *sql.DB
+    var err error
+
+    if flagDsn != "" {
+        appDB, err = db.NewConnection(flagDsn)
+    }
     if err != nil {
         l.Fatal("failed to create connection to db", zap.Error(err))
         return nil
@@ -75,7 +81,7 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
         l,
     )
     metricService := service.New(metricRepo)
-    metricHandler := handler.New(metricService, db, l)
+    metricHandler := handler.New(metricService, appDB, l)
 
     r := chi.NewRouter()
     r.Use(middleware.Logger(l))

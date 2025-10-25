@@ -76,7 +76,7 @@ func parseFlags(args []string, l *zap.Logger) {
         }
     }
 
-    if envDsn, ok := os.LookupEnv(envStorePathKey); ok {
+    if envDsn, ok := os.LookupEnv(envDsnKey); ok {
         flagDsn = envDsn
     }
 }

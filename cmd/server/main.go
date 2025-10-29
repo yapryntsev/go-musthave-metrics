@@ -108,6 +108,7 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
     r.Post("/value/", metricHandler.GetObject)
     r.Post("/update", metricHandler.UpdateObject)
     r.Post("/update/", metricHandler.UpdateObject)
+    r.Post("/updates", metricHandler.UpdateBatch)
     r.Post("/updates/", metricHandler.UpdateBatch)
 
     r.Get(getValueEndpoint, metricHandler.GetValue)

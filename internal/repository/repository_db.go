@@ -11,6 +11,7 @@ import (
     "github.com/jackc/pgx/v5"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "go.uber.org/zap"
+    "time"
 )
 
 type DatabaseMetricRepository struct {
@@ -55,10 +56,13 @@ func (d *DatabaseMetricRepository) initAndCheckMigration() error {
     return nil
 }
 
-func (d *DatabaseMetricRepository) GetAll() ([]*models.Metrics, error) {
-    var result []*models.Metrics
+func (d *DatabaseMetricRepository) GetAll(ctx context.Context) ([]models.Metrics, error) {
+    ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+    defer cancel()
 
-    rows, err := d.db.QueryContext(context.TODO(), "SELECT id, type, delta, value FROM metrics")
+    var result []models.Metrics
+
+    rows, err := d.db.QueryContext(ctx, "SELECT id, type, delta, value FROM metrics")
     if err != nil {
         return nil, err
     }
@@ -72,7 +76,7 @@ func (d *DatabaseMetricRepository) GetAll() ([]*models.Metrics, error) {
             return nil, err
         }
 
-        result = append(result, &r)
+        result = append(result, r)
     }
 
     err = rows.Err()
@@ -83,12 +87,15 @@ func (d *DatabaseMetricRepository) GetAll() ([]*models.Metrics, error) {
     return result, nil
 }
 
-func (d *DatabaseMetricRepository) Get(mID string, mType string) (*models.Metrics, error) {
+func (d *DatabaseMetricRepository) Get(ctx context.Context, mID string, mType string) (*models.Metrics, error) {
+    ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+    defer cancel()
+
     var r models.Metrics
     query := "SELECT id, type, delta, value FROM metrics WHERE id = @id AND type = @type"
 
     row := d.db.QueryRowContext(
-        context.TODO(), query,
+        ctx, query,
         pgx.NamedArgs{
             "id":   mID,
             "type": mType,
@@ -106,11 +113,14 @@ func (d *DatabaseMetricRepository) Get(mID string, mType string) (*models.Metric
     return &r, err
 }
 
-func (d *DatabaseMetricRepository) Set(metric *models.Metrics) error {
+func (d *DatabaseMetricRepository) Set(ctx context.Context, metric models.Metrics) error {
+    ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+    defer cancel()
+
     query := "INSERT INTO metrics (id, type, delta, value) VALUES (@id, @type, @delta, @value)"
 
     _, err := d.db.ExecContext(
-        context.TODO(), query,
+        ctx, query,
         pgx.NamedArgs{
             "id":    metric.ID,
             "type":  metric.MType,
@@ -120,4 +130,44 @@ func (d *DatabaseMetricRepository) Set(metric *models.Metrics) error {
     )
 
     return err
+}
+
+func (d *DatabaseMetricRepository) SetBatch(ctx context.Context, metrics []models.Metrics) error {
+    ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+    defer cancel()
+
+    tx, err := d.db.BeginTx(ctx, nil)
+    if err != nil {
+        return fmt.Errorf("failed to create transaction: %w", err)
+    }
+
+    stmt, err := tx.PrepareContext(
+        ctx,
+        "INSERT INTO metrics (id, type, delta, value) "+
+            "VALUES ($1, $2, $3, $4) "+
+            "ON CONFLICT (id, type) DO UPDATE SET delta = $3, value = $4",
+    )
+    if err != nil {
+        return fmt.Errorf("failed to prepare sql statement: %w", err)
+    }
+
+    for _, m := range metrics {
+        _, err := stmt.ExecContext(
+            ctx,
+            m.ID,
+            m.MType,
+            m.Delta,
+            m.Value,
+        )
+        if err != nil {
+            tx.Rollback()
+            return fmt.Errorf("failed to perform insert: %w", err)
+        }
+    }
+
+    if err := tx.Commit(); err != nil {
+        return fmt.Errorf("failed to commit transaction: %w", err)
+    }
+
+    return nil
 }

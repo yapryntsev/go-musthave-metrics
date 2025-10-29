@@ -3,7 +3,6 @@ package handler
 import (
     "bytes"
     "context"
-    "database/sql"
     "encoding/json"
     "fmt"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
@@ -18,12 +17,11 @@ const GetAllRowFormat = "%s: %s\n"
 
 type MetricHandler struct {
     l       *zap.Logger
-    db      *sql.DB
     service service.MetricService
 }
 
-func New(service service.MetricService, db *sql.DB, l *zap.Logger) MetricHandler {
-    return MetricHandler{l: l, db: db, service: service}
+func New(service service.MetricService, l *zap.Logger) MetricHandler {
+    return MetricHandler{l: l, service: service}
 }
 
 func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +30,7 @@ func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    res, err := h.service.GetAll()
+    res, err := h.service.GetAll(r.Context())
     if err != nil {
         h.l.Error("failed to get all metrics", zap.Error(err))
 
@@ -75,7 +73,7 @@ func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
         MType: mType,
     }
 
-    ok, err := h.service.Get(metric)
+    ok, err := h.service.Get(r.Context(), metric)
     if err != nil {
         h.l.Error(
             "failed to get metric",
@@ -126,7 +124,7 @@ func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    ok, err := h.service.Get(metric)
+    ok, err := h.service.Get(r.Context(), metric)
     if err != nil {
         h.l.Error(
             "failed to get metric",
@@ -200,7 +198,7 @@ func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    h.updateMetric(w, metric)
+    h.updateMetric(r.Context(), w, metric)
 }
 
 func (h MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +215,7 @@ func (h MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    h.updateMetric(w, metric)
+    h.updateMetric(r.Context(), w, metric)
 }
 
 func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
@@ -229,7 +227,7 @@ func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
     ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
     defer cancel()
 
-    if err := h.db.PingContext(ctx); err != nil {
+    if err := h.service.Ping(ctx); err != nil {
         h.l.Error("failed to ping db", zap.Error(err))
         w.WriteHeader(http.StatusInternalServerError)
         return
@@ -238,7 +236,31 @@ func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
 }
 
-func (h MetricHandler) updateMetric(w http.ResponseWriter, metric *models.Metrics) {
+func (h MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return
+    }
+
+    var metric []models.Metrics
+    if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
+        h.l.Error("failed to decode request body", zap.Error(err))
+
+        w.WriteHeader(http.StatusBadRequest)
+        return
+    }
+
+    if err := h.service.UpdateBatch(r.Context(), metric); err != nil {
+        h.l.Error("failed to save batch", zap.Error(err))
+
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+}
+
+func (h MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, metric *models.Metrics) {
     var err error
 
     switch metric.MType {
@@ -247,13 +269,13 @@ func (h MetricHandler) updateMetric(w http.ResponseWriter, metric *models.Metric
             w.WriteHeader(http.StatusBadRequest)
             return
         }
-        err = h.service.UpdateGauge(metric.ID, *metric.Value)
+        err = h.service.UpdateGauge(ctx, metric.ID, *metric.Value)
     case models.Counter:
         if metric.Delta == nil {
             w.WriteHeader(http.StatusBadRequest)
             return
         }
-        err = h.service.UpdateCounter(metric.ID, *metric.Delta)
+        err = h.service.UpdateCounter(ctx, metric.ID, *metric.Delta)
     }
 
     if err != nil {

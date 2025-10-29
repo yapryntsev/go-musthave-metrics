@@ -215,8 +215,8 @@ func Test_GetAllHandler_HasValue_Return(t *testing.T) {
     service := mocks.NewServiceMock()
     handler := makeHandler(t, service)
 
-    service.GetAllReturnValue = []*models.Metrics{
-        &models.Metrics{
+    service.GetAllReturnValue = []models.Metrics{
+        models.Metrics{
             ID:    expectedName,
             MType: models.Counter,
             Delta: new(int64),
@@ -245,7 +245,7 @@ func Test_GetAllHandler_NoValue_ReturnEmptyBody(t *testing.T) {
     service := mocks.NewServiceMock()
     handler := makeHandler(t, service)
 
-    service.GetAllReturnValue = []*models.Metrics{}
+    service.GetAllReturnValue = []models.Metrics{}
 
     // When
     handler.GetAll(w, r)
@@ -487,4 +487,153 @@ func Test_GetObjectHandler_HasValue_Return(t *testing.T) {
 
     require.Equal(t, http.StatusOK, res.StatusCode)
     require.Equal(t, string(expectedResp)+"\n", string(body))
+}
+
+func Test_Ping_CallService(t *testing.T) {
+    // Given
+    r := httptest.NewRequest(http.MethodGet, "/ping", nil)
+    w := httptest.NewRecorder()
+
+    serviceMock := mocks.NewServiceMock()
+    handler := makeHandler(t, serviceMock)
+
+    serviceMock.PingReturnError = nil
+
+    // When
+    handler.Ping(w, r)
+
+    // Then
+    assert.True(t, serviceMock.IsPingCalled)
+}
+
+func Test_Ping_HasError_Return500(t *testing.T) {
+    // Given
+    r := httptest.NewRequest(http.MethodGet, "/ping", nil)
+    w := httptest.NewRecorder()
+
+    serviceMock := mocks.NewServiceMock()
+    handler := makeHandler(t, serviceMock)
+
+    serviceMock.PingReturnError = errors.New("test error")
+
+    // When
+    handler.Ping(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    assert.True(t, serviceMock.IsPingCalled)
+    assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+}
+
+func Test_Ping_NoError_Return200(t *testing.T) {
+    // Given
+    r := httptest.NewRequest(http.MethodGet, "/ping", nil)
+    w := httptest.NewRecorder()
+
+    serviceMock := mocks.NewServiceMock()
+    handler := makeHandler(t, serviceMock)
+
+    // When
+    handler.Ping(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    assert.True(t, serviceMock.IsPingCalled)
+    assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+
+func Test_Updates_InvalidBody_Return400(t *testing.T) {
+    // Given
+    r := httptest.NewRequest(http.MethodPost, "/updates", nil)
+    w := httptest.NewRecorder()
+
+    serviceMock := mocks.NewServiceMock()
+    handler := makeHandler(t, serviceMock)
+
+    // When
+    handler.UpdateBatch(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    assert.False(t, serviceMock.IsUpdateCounterCalled)
+    assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func Test_Updates_ValidBody_PassBatchToService(t *testing.T) {
+    // Given
+    expectedBatch := []models.Metrics{
+        models.Metrics{
+            ID:    "test",
+            MType: "gauge",
+        },
+        models.Metrics{
+            ID:    "test-2",
+            MType: "gauge",
+        },
+    }
+
+    requestBody, err := json.Marshal(expectedBatch)
+    if err != nil {
+        t.Error(err)
+    }
+
+    r := httptest.NewRequest(http.MethodPost, "/updates", bytes.NewBuffer(requestBody))
+    w := httptest.NewRecorder()
+
+    serviceMock := mocks.NewServiceMock()
+    handler := makeHandler(t, serviceMock)
+
+    // When
+    handler.UpdateBatch(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    assert.False(t, serviceMock.IsUpdateCounterCalled)
+    assert.Equal(t, http.StatusOK, res.StatusCode)
+    assert.Equal(t, expectedBatch, serviceMock.SetBatchLastCallParam)
+}
+
+func Test_Updates_ServiceReturnError_Return500(t *testing.T) {
+    // Given
+    expectedBatch := []models.Metrics{
+        models.Metrics{
+            ID:    "test",
+            MType: "gauge",
+        },
+        models.Metrics{
+            ID:    "test-2",
+            MType: "gauge",
+        },
+    }
+
+    requestBody, err := json.Marshal(expectedBatch)
+    if err != nil {
+        t.Error(err)
+    }
+
+    r := httptest.NewRequest(http.MethodPost, "/updates", bytes.NewBuffer(requestBody))
+    w := httptest.NewRecorder()
+
+    serviceMock := mocks.NewServiceMock()
+    handler := makeHandler(t, serviceMock)
+
+    serviceMock.SetBatchReturnError = errors.New("test error")
+
+    // When
+    handler.UpdateBatch(w, r)
+
+    // Then
+    res := w.Result()
+    defer res.Body.Close()
+
+    assert.False(t, serviceMock.IsUpdateCounterCalled)
+    assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }

@@ -81,80 +81,85 @@ func (a *Agent) scheduleMetricsFetchAndUpload(lastReportTime *time.Time) error {
 func (a *Agent) sendMetrics() error {
     stats := a.stats
 
-    gaugeMetrics := []struct {
-        name  string
-        value float64
-    }{
-        {"RandomValue", a.randValue},
-        {"Alloc", float64(stats.Alloc)},
-        {"BuckHashSys", float64(stats.BuckHashSys)},
-        {"Frees", float64(stats.Frees)},
-        {"GCCPUFraction", float64(stats.GCCPUFraction)},
-        {"GCSys", float64(stats.GCSys)},
-        {"HeapAlloc", float64(stats.HeapAlloc)},
-        {"HeapIdle", float64(stats.HeapIdle)},
-        {"HeapInuse", float64(stats.HeapInuse)},
-        {"HeapObjects", float64(stats.HeapObjects)},
-        {"HeapReleased", float64(stats.HeapReleased)},
-        {"HeapSys", float64(stats.HeapSys)},
-        {"LastGC", float64(stats.LastGC)},
-        {"Lookups", float64(stats.Lookups)},
-        {"MCacheInuse", float64(stats.MCacheInuse)},
-        {"MCacheSys", float64(stats.MCacheSys)},
-        {"MSpanInuse", float64(stats.MSpanInuse)},
-        {"MSpanSys", float64(stats.MSpanSys)},
-        {"Mallocs", float64(stats.Mallocs)},
-        {"NextGC", float64(stats.NextGC)},
-        {"NumForcedGC", float64(stats.NumForcedGC)},
-        {"NumGC", float64(stats.NumGC)},
-        {"OtherSys", float64(stats.OtherSys)},
-        {"PauseTotalNs", float64(stats.PauseTotalNs)},
-        {"StackInuse", float64(stats.StackInuse)},
-        {"StackSys", float64(stats.StackSys)},
-        {"Sys", float64(stats.Sys)},
-        {"TotalAlloc", float64(stats.TotalAlloc)},
+    alloc := float64(stats.Alloc)
+    bhs := float64(stats.BuckHashSys)
+    frees := float64(stats.Frees)
+    gccpf := float64(stats.GCCPUFraction)
+    gcys := float64(stats.GCSys)
+    ha := float64(stats.HeapAlloc)
+    hid := float64(stats.HeapIdle)
+    hin := float64(stats.HeapInuse)
+    hob := float64(stats.HeapObjects)
+    hre := float64(stats.HeapReleased)
+    hsy := float64(stats.HeapSys)
+    lgc := float64(stats.LastGC)
+    lup := float64(stats.Lookups)
+    mci := float64(stats.MCacheInuse)
+    mcs := float64(stats.MCacheSys)
+    msi := float64(stats.MSpanInuse)
+    mss := float64(stats.MSpanSys)
+    mll := float64(stats.Mallocs)
+    ngc := float64(stats.NextGC)
+    nfg := float64(stats.NumForcedGC)
+    nugc := float64(stats.NumGC)
+    oss := float64(stats.OtherSys)
+    ptn := float64(stats.PauseTotalNs)
+    si := float64(stats.StackInuse)
+    ss := float64(stats.StackSys)
+    sys := float64(stats.Sys)
+    ta := float64(stats.TotalAlloc)
+    pc := int64(a.pollCount)
+
+    metrics := []models.Metrics{
+        {ID: "RandomValue", Value: &a.randValue},
+        {ID: "Alloc", Value: &alloc},
+        {ID: "BuckHashSys", Value: &bhs},
+        {ID: "Frees", Value: &frees},
+        {ID: "GCCPUFraction", Value: &gccpf},
+        {ID: "GCSys", Value: &gcys},
+        {ID: "HeapAlloc", Value: &ha},
+        {ID: "HeapIdle", Value: &hid},
+        {ID: "HeapInuse", Value: &hin},
+        {ID: "HeapObjects", Value: &hob},
+        {ID: "HeapReleased", Value: &hre},
+        {ID: "HeapSys", Value: &hsy},
+        {ID: "LastGC", Value: &lgc},
+        {ID: "Lookups", Value: &lup},
+        {ID: "MCacheInuse", Value: &mci},
+        {ID: "MCacheSys", Value: &mcs},
+        {ID: "MSpanInuse", Value: &msi},
+        {ID: "MSpanSys", Value: &mss},
+        {ID: "Mallocs", Value: &mll},
+        {ID: "NextGC", Value: &ngc},
+        {ID: "NumForcedGC", Value: &nfg},
+        {ID: "NumGC", Value: &nugc},
+        {ID: "OtherSys", Value: &oss},
+        {ID: "PauseTotalNs", Value: &ptn},
+        {ID: "StackInuse", Value: &si},
+        {ID: "StackSys", Value: &ss},
+        {ID: "Sys", Value: &sys},
+        {ID: "TotalAlloc", Value: &ta},
+        {ID: "PollCount", Delta: &pc},
     }
 
-    for _, m := range gaugeMetrics {
-        err := a.sendMetric(models.Gauge, m.name, m.value)
-        if err != nil {
-            return err
-        }
+    err := a.sendBatch(metrics)
+    if err != nil {
+        return fmt.Errorf("failed to send metrics batch: %w", err)
     }
 
-    return a.sendMetric(models.Counter, "PollCount", int64(a.pollCount))
+    return nil
 }
 
-func (a *Agent) sendMetric(t string, name string, value interface{}) error {
+func (a *Agent) sendBatch(metrics []models.Metrics) error {
     if len(a.addr) == 0 {
         return errors.New("host must be configured")
-    }
-
-    metric := models.Metrics{
-        ID:    name,
-        MType: t,
-    }
-
-    switch t {
-    case models.Counter:
-        v, ok := value.(int64)
-        if !ok {
-            return fmt.Errorf("не удалось привести значение %v к типу int64", value)
-        }
-        metric.Delta = &v
-    case models.Gauge:
-        v, ok := value.(float64)
-        if !ok {
-            return fmt.Errorf("не удалось привести значение %v к типу float64", value)
-        }
-        metric.Value = &v
     }
 
     var buf bytes.Buffer
     zw := gzip.NewWriter(&buf)
     defer zw.Close()
 
-    if err := json.NewEncoder(zw).Encode(metric); err != nil {
+    if err := json.NewEncoder(zw).Encode(metrics); err != nil {
         return err
     }
 
@@ -166,13 +171,13 @@ func (a *Agent) sendMetric(t string, name string, value interface{}) error {
         SetHeader("Content-Type", "application/json").
         SetHeader("Content-Encoding", "gzip").
         SetBody(buf.Bytes()).
-        Post(fmt.Sprintf("http://%s/update", a.addr))
+        Post(fmt.Sprintf("http://%s/updates", a.addr))
 
     if err != nil {
         a.l.Error("failed to send metrics", zap.Error(err))
     }
 
-    a.l.Debug(fmt.Sprintf("metric sent. type: %s, name: %s, value: %v", t, name, value))
+    a.l.Debug("metrics sent")
 
     if resp.StatusCode() != http.StatusOK {
         a.l.Error("unexpected status code", zap.Int("code", resp.StatusCode()))

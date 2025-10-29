@@ -1,12 +1,13 @@
 package mocks
 
 import (
+    "context"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
 )
 
 type MetricServiceMock struct {
     IsGetAllCalled    bool
-    GetAllReturnValue []*models.Metrics
+    GetAllReturnValue []models.Metrics
     GetAllReturnError error
 
     IsGetCalled             bool
@@ -24,18 +25,25 @@ type MetricServiceMock struct {
     UpdateGaugeLastCallNameParam  string
     UpdateGaugeLastCallValueParam float64
     UpdateGaugeReturnError        error
+
+    IsSetBatchCalled      bool
+    SetBatchLastCallParam []models.Metrics
+    SetBatchReturnError   error
+
+    IsPingCalled    bool
+    PingReturnError error
 }
 
 func NewServiceMock() *MetricServiceMock {
     return &MetricServiceMock{}
 }
 
-func (m *MetricServiceMock) GetAll() ([]*models.Metrics, error) {
+func (m *MetricServiceMock) GetAll(ctx context.Context) ([]models.Metrics, error) {
     m.IsGetAllCalled = true
     return m.GetAllReturnValue, m.GetAllReturnError
 }
 
-func (m *MetricServiceMock) Get(metric *models.Metrics) (bool, error) {
+func (m *MetricServiceMock) Get(ctx context.Context, metric *models.Metrics) (bool, error) {
     m.IsGetCalled = true
     m.GetLastCallParam = *metric
 
@@ -46,16 +54,27 @@ func (m *MetricServiceMock) Get(metric *models.Metrics) (bool, error) {
     return m.GetReturnValue, m.GetReturnError
 }
 
-func (m *MetricServiceMock) UpdateCounter(mID string, value int64) error {
+func (m *MetricServiceMock) UpdateCounter(ctx context.Context, mID string, value int64) error {
     m.IsUpdateCounterCalled = true
     m.UpdateCounterLastCallNameParam = mID
     m.UpdateCounterLastCallValueParam = value
     return m.UpdateCounterReturnError
 }
 
-func (m *MetricServiceMock) UpdateGauge(mID string, value float64) error {
+func (m *MetricServiceMock) UpdateGauge(ctx context.Context, mID string, value float64) error {
     m.IsUpdateGaugeCalled = true
     m.UpdateGaugeLastCallNameParam = mID
     m.UpdateGaugeLastCallValueParam = value
     return m.UpdateGaugeReturnError
+}
+
+func (m *MetricServiceMock) UpdateBatch(ctx context.Context, metrics []models.Metrics) error {
+    m.IsSetBatchCalled = true
+    m.SetBatchLastCallParam = metrics
+    return m.SetBatchReturnError
+}
+
+func (m *MetricServiceMock) Ping(ctx context.Context) error {
+    m.IsPingCalled = true
+    return m.PingReturnError
 }

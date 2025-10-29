@@ -81,8 +81,8 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
         flagRestore,
         l,
     )
-    metricService := service.New(metricRepo)
-    metricHandler := handler.New(metricService, appDB, l)
+    metricService := service.New(metricRepo, appDB)
+    metricHandler := handler.New(metricService, l)
 
     r := chi.NewRouter()
     r.Use(middleware.Logger(l))

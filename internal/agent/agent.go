@@ -7,13 +7,14 @@ import (
     "encoding/json"
     "errors"
     "fmt"
-    "github.com/go-resty/resty/v2"
-    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
-    "go.uber.org/zap"
     "math/rand"
     "net/http"
     "runtime"
     "time"
+
+    "github.com/go-resty/resty/v2"
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+    "go.uber.org/zap"
 )
 
 type Agent struct {
@@ -30,15 +31,23 @@ type Agent struct {
 }
 
 func New(addr string, reportInterval uint, pollInterval uint, l *zap.Logger) *Agent {
-    client := http.Client{
+    httpClient := http.Client{
         Timeout: 5 * time.Second,
     }
+    restyClient := resty.NewWithClient(&httpClient).
+        SetRetryCount(3).
+        SetRetryAfter(
+            func(client *resty.Client, response *resty.Response) (time.Duration, error) {
+                a := response.Request.Attempt - 1
+                return time.Duration(1+2*a) * time.Second, nil
+            },
+        )
 
     return &Agent{
         addr:           addr,
         stats:          &runtime.MemStats{},
         l:              l,
-        client:         resty.NewWithClient(&client),
+        client:         restyClient,
         reportInterval: reportInterval,
         pollInterval:   pollInterval,
     }
@@ -51,7 +60,7 @@ func (a *Agent) StartGathering(ctx context.Context) error {
         case <-ctx.Done():
             return nil
         default:
-            err := a.scheduleMetricsFetchAndUpload(&lastReportTime)
+            err := a.scheduleMetricsFetchAndUpload(ctx, &lastReportTime)
             if err != nil {
                 return err
             }
@@ -59,7 +68,7 @@ func (a *Agent) StartGathering(ctx context.Context) error {
     }
 }
 
-func (a *Agent) scheduleMetricsFetchAndUpload(lastReportTime *time.Time) error {
+func (a *Agent) scheduleMetricsFetchAndUpload(ctx context.Context, lastReportTime *time.Time) error {
     time.Sleep(time.Duration(a.pollInterval) * time.Second)
 
     a.pollCount++
@@ -74,11 +83,11 @@ func (a *Agent) scheduleMetricsFetchAndUpload(lastReportTime *time.Time) error {
     }
     *lastReportTime = time.Now()
 
-    err := a.sendMetrics()
+    err := a.sendMetrics(ctx)
     return err
 }
 
-func (a *Agent) sendMetrics() error {
+func (a *Agent) sendMetrics(ctx context.Context) error {
     stats := a.stats
 
     alloc := float64(stats.Alloc)
@@ -142,7 +151,7 @@ func (a *Agent) sendMetrics() error {
         {ID: "PollCount", MType: models.Counter, Delta: &pc},
     }
 
-    err := a.sendBatch(metrics)
+    err := a.sendBatch(ctx, metrics)
     if err != nil {
         return fmt.Errorf("failed to send metrics batch: %w", err)
     }
@@ -150,7 +159,7 @@ func (a *Agent) sendMetrics() error {
     return nil
 }
 
-func (a *Agent) sendBatch(metrics []models.Metrics) error {
+func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
     if len(a.addr) == 0 {
         return errors.New("host must be configured")
     }
@@ -168,6 +177,7 @@ func (a *Agent) sendBatch(metrics []models.Metrics) error {
     }
 
     resp, err := a.client.R().
+        SetContext(ctx).
         SetHeader("Content-Type", "application/json").
         SetHeader("Content-Encoding", "gzip").
         SetBody(buf.Bytes()).

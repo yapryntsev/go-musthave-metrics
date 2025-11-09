@@ -110,10 +110,6 @@ func (d *DatabaseMetricRepository) performGetAll(ctx context.Context) ([]models.
         return nil, err
     }
 
-    if err != nil {
-        return nil, err
-    }
-
     return result, nil
 }
 
@@ -250,8 +246,6 @@ func (d *DatabaseMetricRepository) performSetBatch(ctx context.Context, metrics 
 
             return errors.Join(errs...)
         }
-
-        return nil
     }
 
     if err := tx.Commit(); err != nil {

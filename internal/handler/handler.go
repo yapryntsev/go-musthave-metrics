@@ -279,7 +279,8 @@ func (h MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, 
     }
 
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        h.l.Error("failed to update metric", zap.Error(err))
+        w.WriteHeader(http.StatusInternalServerError)
         return
     }
 

@@ -164,18 +164,19 @@ func (d *DatabaseMetricRepository) Set(ctx context.Context, metric models.Metric
     ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
     defer cancel()
 
-    query := "INSERT INTO metrics (id, type, delta, value) VALUES (@id, @type, @delta, @value)"
+    query := "INSERT INTO metrics (id, type, delta, value) " +
+        "VALUES ($1, $2, $3, $4) " +
+        "ON CONFLICT (id,type) DO UPDATE SET delta = $3, value = $4"
 
     err := performOperationWithRetry(
         func() error {
             _, err := d.db.ExecContext(
-                ctx, query,
-                pgx.NamedArgs{
-                    "id":    metric.ID,
-                    "type":  metric.MType,
-                    "delta": metric.Delta,
-                    "value": metric.Value,
-                },
+                ctx,
+                query,
+                metric.ID,
+                metric.MType,
+                metric.Delta,
+                metric.Value,
             )
             return err
         },

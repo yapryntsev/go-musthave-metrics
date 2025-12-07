@@ -2,6 +2,7 @@ package handler
 
 import (
     "bytes"
+    "context"
     "encoding/json"
     "errors"
     "fmt"
@@ -10,6 +11,7 @@ import (
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/service"
     "github.com/yapryntsev/go-musthave-metrics/internal/service/mocks"
+    "go.uber.org/mock/gomock"
     "go.uber.org/zap/zaptest"
     "io"
     "net/http"
@@ -33,11 +35,14 @@ func Test_GaugeHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
         t.Run(
             m, func(t *testing.T) {
                 // Given
+                ctrl := gomock.NewController(t)
+                defer ctrl.Finish()
+
                 r := httptest.NewRequest(m, "/gauge/test/100", nil)
                 w := httptest.NewRecorder()
 
                 // When
-                handler := makeHandler(t, mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewMockMetricService(ctrl))
                 handler.Update(w, r)
 
                 // Then
@@ -66,11 +71,14 @@ func Test_CounterHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
         t.Run(
             m, func(t *testing.T) {
                 // Given
+                ctrl := gomock.NewController(t)
+                defer ctrl.Finish()
+
                 r := httptest.NewRequest(m, "/counter/test/100", nil)
                 w := httptest.NewRecorder()
 
                 // When
-                handler := makeHandler(t, mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewMockMetricService(ctrl))
                 handler.Update(w, r)
 
                 // Then
@@ -97,6 +105,9 @@ func Test_GaugeHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
         t.Run(
             c.name, func(t *testing.T) {
                 // Given
+                ctrl := gomock.NewController(t)
+                defer ctrl.Finish()
+
                 r := httptest.NewRequest(
                     http.MethodPost,
                     fmt.Sprintf(`/gauge/%s/%s`, c.name, c.value),
@@ -108,7 +119,7 @@ func Test_GaugeHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
                 r.SetPathValue(service.MetricValuePathKey, c.value)
 
                 // When
-                handler := makeHandler(t, mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewMockMetricService(ctrl))
                 handler.Update(w, r)
 
                 // Then
@@ -135,6 +146,9 @@ func Test_CounterHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
         t.Run(
             c.name, func(t *testing.T) {
                 // Given
+                ctrl := gomock.NewController(t)
+                defer ctrl.Finish()
+
                 r := httptest.NewRequest(
                     http.MethodPost,
                     fmt.Sprintf(`/counter/%s/%s`, c.name, c.value),
@@ -146,7 +160,7 @@ func Test_CounterHandler_InvalidPath_ThrowsNotFound(t *testing.T) {
                 r.SetPathValue(service.MetricValuePathKey, c.value)
 
                 // When
-                handler := makeHandler(t, mocks.NewServiceMock())
+                handler := makeHandler(t, mocks.NewMockMetricService(ctrl))
                 handler.Update(w, r)
 
                 // Then
@@ -167,8 +181,11 @@ func Test_GaugeHandler_NonFloatValue_ThrowsBadRequest(t *testing.T) {
     r.SetPathValue(service.MetricNamePathKey, "test")
     r.SetPathValue(service.MetricValuePathKey, "value")
 
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
     // When
-    handler := makeHandler(t, mocks.NewServiceMock())
+    handler := makeHandler(t, mocks.NewMockMetricService(ctrl))
     handler.Update(w, r)
 
     // Then
@@ -186,8 +203,11 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
     r.SetPathValue(service.MetricNamePathKey, "test")
     r.SetPathValue(service.MetricValuePathKey, "value")
 
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
     // When
-    handler := makeHandler(t, mocks.NewServiceMock())
+    handler := makeHandler(t, mocks.NewMockMetricService(ctrl))
     handler.Update(w, r)
 
     // Then
@@ -197,31 +217,30 @@ func Test_CounterHandler_NonIntValue_ThrowsBadRequest(t *testing.T) {
     assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 }
 
-func makeHandler(t *testing.T, service *mocks.MetricServiceMock) *MetricHandler {
-    return &MetricHandler{
-        l:       zaptest.NewLogger(t),
-        service: service,
-    }
-}
-
 func Test_GetAllHandler_HasValue_Return(t *testing.T) {
     // Given
     expectedName := "test"
     expectedValue := "0"
-
-    r := httptest.NewRequest(http.MethodGet, "/", nil)
-    w := httptest.NewRecorder()
-
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
-
-    service.GetAllReturnValue = []models.Metrics{
-        models.Metrics{
+    expectedReturn := []models.Metrics{
+        {
             ID:    expectedName,
             MType: models.Counter,
             Delta: new(int64),
         },
     }
+
+    r := httptest.NewRequest(http.MethodGet, "/", nil)
+    w := httptest.NewRecorder()
+
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        GetAll(r.Context()).
+        Return(expectedReturn, nil)
 
     // When
     handler.GetAll(w, r)
@@ -242,10 +261,15 @@ func Test_GetAllHandler_NoValue_ReturnEmptyBody(t *testing.T) {
     r := httptest.NewRequest(http.MethodGet, "/", nil)
     w := httptest.NewRecorder()
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetAllReturnValue = []models.Metrics{}
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        GetAll(r.Context()).
+        Return([]models.Metrics{}, nil)
 
     // When
     handler.GetAll(w, r)
@@ -266,10 +290,13 @@ func Test_GetAllHandler_HasError_ThrowInternalError(t *testing.T) {
     r := httptest.NewRequest(http.MethodGet, "/", nil)
     w := httptest.NewRecorder()
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetAllReturnError = errors.New(`test error`)
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().GetAll(r.Context()).Return([]models.Metrics{}, errors.New("test error"))
 
     // When
     handler.GetAll(w, r)
@@ -295,13 +322,20 @@ func Test_GetValueHandler_HasValue_Return(t *testing.T) {
     r.SetPathValue(service.MetricTypePathKey, `gauge`)
     r.SetPathValue(service.MetricNamePathKey, `test`)
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetReturnValue = true
-    service.GetLastCallParamMutator = func(m *models.Metrics) {
-        m.Value = &expectedValue
-    }
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Get(r.Context(), gomock.Any()).
+        DoAndReturn(
+            func(ctx context.Context, m *models.Metrics) (bool, error) {
+                m.Value = &expectedValue
+                return true, nil
+            },
+        )
 
     // When
     handler.GetValue(w, r)
@@ -325,10 +359,15 @@ func Test_GetValueHandler_HasNotValue_ThrowNotFound(t *testing.T) {
     r.SetPathValue(service.MetricTypePathKey, `gauge`)
     r.SetPathValue(service.MetricNamePathKey, `test`)
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetReturnValue = false
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Get(r.Context(), gomock.Any()).
+        Return(false, nil)
 
     // When
     handler.GetValue(w, r)
@@ -352,10 +391,15 @@ func Test_GetValueHandler_HasError_ThrowInternalError(t *testing.T) {
     r.SetPathValue(service.MetricTypePathKey, `gauge`)
     r.SetPathValue(service.MetricNamePathKey, `test`)
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetReturnError = errors.New("test error")
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Get(r.Context(), gomock.Any()).
+        Return(false, errors.New("test error"))
 
     // When
     handler.GetValue(w, r)
@@ -387,10 +431,15 @@ func Test_GetObjectHandler_HasError_ThrowInternalError(t *testing.T) {
     r := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(requestBody))
     w := httptest.NewRecorder()
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetReturnError = errors.New("test error")
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Get(r.Context(), gomock.Any()).
+        Return(false, errors.New("test error"))
 
     // When
     handler.GetObject(w, r)
@@ -422,10 +471,15 @@ func Test_GetObjectHandler_HasNotValue_ThrowNotFound(t *testing.T) {
     r := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(requestBody))
     w := httptest.NewRecorder()
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetReturnValue = false
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Get(r.Context(), gomock.Any()).
+        Return(false, nil)
 
     // When
     handler.GetObject(w, r)
@@ -467,13 +521,20 @@ func Test_GetObjectHandler_HasValue_Return(t *testing.T) {
     r := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(requestBody))
     w := httptest.NewRecorder()
 
-    service := mocks.NewServiceMock()
-    handler := makeHandler(t, service)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    service.GetReturnValue = true
-    service.GetLastCallParamMutator = func(m *models.Metrics) {
-        m.Value = &expectedValue
-    }
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Get(r.Context(), gomock.Any()).
+        DoAndReturn(
+            func(ctx context.Context, m *models.Metrics) (bool, error) {
+                m.Value = &expectedValue
+                return true, nil
+            },
+        )
 
     // When
     handler.GetObject(w, r)
@@ -494,16 +555,18 @@ func Test_Ping_CallService(t *testing.T) {
     r := httptest.NewRequest(http.MethodGet, "/ping", nil)
     w := httptest.NewRecorder()
 
-    serviceMock := mocks.NewServiceMock()
-    handler := makeHandler(t, serviceMock)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    serviceMock.PingReturnError = nil
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Ping(r.Context()).
+        Return(nil)
 
     // When
     handler.Ping(w, r)
-
-    // Then
-    assert.True(t, serviceMock.IsPingCalled)
 }
 
 func Test_Ping_HasError_Return500(t *testing.T) {
@@ -511,10 +574,15 @@ func Test_Ping_HasError_Return500(t *testing.T) {
     r := httptest.NewRequest(http.MethodGet, "/ping", nil)
     w := httptest.NewRecorder()
 
-    serviceMock := mocks.NewServiceMock()
-    handler := makeHandler(t, serviceMock)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    serviceMock.PingReturnError = errors.New("test error")
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Ping(r.Context()).
+        Return(errors.New("test error"))
 
     // When
     handler.Ping(w, r)
@@ -523,7 +591,6 @@ func Test_Ping_HasError_Return500(t *testing.T) {
     res := w.Result()
     defer res.Body.Close()
 
-    assert.True(t, serviceMock.IsPingCalled)
     assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }
 
@@ -532,8 +599,15 @@ func Test_Ping_NoError_Return200(t *testing.T) {
     r := httptest.NewRequest(http.MethodGet, "/ping", nil)
     w := httptest.NewRecorder()
 
-    serviceMock := mocks.NewServiceMock()
-    handler := makeHandler(t, serviceMock)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        Ping(r.Context()).
+        Times(1)
 
     // When
     handler.Ping(w, r)
@@ -542,7 +616,6 @@ func Test_Ping_NoError_Return200(t *testing.T) {
     res := w.Result()
     defer res.Body.Close()
 
-    assert.True(t, serviceMock.IsPingCalled)
     assert.Equal(t, http.StatusOK, res.StatusCode)
 }
 
@@ -551,8 +624,15 @@ func Test_Updates_InvalidBody_Return400(t *testing.T) {
     r := httptest.NewRequest(http.MethodPost, "/updates", nil)
     w := httptest.NewRecorder()
 
-    serviceMock := mocks.NewServiceMock()
-    handler := makeHandler(t, serviceMock)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        UpdateCounter(r.Context(), gomock.Any(), gomock.Any()).
+        Times(0)
 
     // When
     handler.UpdateBatch(w, r)
@@ -561,18 +641,17 @@ func Test_Updates_InvalidBody_Return400(t *testing.T) {
     res := w.Result()
     defer res.Body.Close()
 
-    assert.False(t, serviceMock.IsUpdateCounterCalled)
     assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
 
 func Test_Updates_ValidBody_PassBatchToService(t *testing.T) {
     // Given
     expectedBatch := []models.Metrics{
-        models.Metrics{
+        {
             ID:    "test",
             MType: "gauge",
         },
-        models.Metrics{
+        {
             ID:    "test-2",
             MType: "gauge",
         },
@@ -586,8 +665,18 @@ func Test_Updates_ValidBody_PassBatchToService(t *testing.T) {
     r := httptest.NewRequest(http.MethodPost, "/updates", bytes.NewBuffer(requestBody))
     w := httptest.NewRecorder()
 
-    serviceMock := mocks.NewServiceMock()
-    handler := makeHandler(t, serviceMock)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        UpdateCounter(r.Context(), gomock.Any(), gomock.Any()).
+        Times(0)
+
+    svc.EXPECT().
+        UpdateBatch(r.Context(), expectedBatch)
 
     // When
     handler.UpdateBatch(w, r)
@@ -596,19 +685,17 @@ func Test_Updates_ValidBody_PassBatchToService(t *testing.T) {
     res := w.Result()
     defer res.Body.Close()
 
-    assert.False(t, serviceMock.IsUpdateCounterCalled)
     assert.Equal(t, http.StatusOK, res.StatusCode)
-    assert.Equal(t, expectedBatch, serviceMock.SetBatchLastCallParam)
 }
 
 func Test_Updates_ServiceReturnError_Return500(t *testing.T) {
     // Given
     expectedBatch := []models.Metrics{
-        models.Metrics{
+        {
             ID:    "test",
             MType: "gauge",
         },
-        models.Metrics{
+        {
             ID:    "test-2",
             MType: "gauge",
         },
@@ -622,10 +709,19 @@ func Test_Updates_ServiceReturnError_Return500(t *testing.T) {
     r := httptest.NewRequest(http.MethodPost, "/updates", bytes.NewBuffer(requestBody))
     w := httptest.NewRecorder()
 
-    serviceMock := mocks.NewServiceMock()
-    handler := makeHandler(t, serviceMock)
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
 
-    serviceMock.SetBatchReturnError = errors.New("test error")
+    svc := mocks.NewMockMetricService(ctrl)
+    handler := makeHandler(t, svc)
+
+    svc.EXPECT().
+        UpdateBatch(r.Context(), gomock.Any()).
+        Return(errors.New("test error"))
+
+    svc.EXPECT().
+        UpdateCounter(r.Context(), gomock.Any(), gomock.Any()).
+        Times(0)
 
     // When
     handler.UpdateBatch(w, r)
@@ -634,6 +730,12 @@ func Test_Updates_ServiceReturnError_Return500(t *testing.T) {
     res := w.Result()
     defer res.Body.Close()
 
-    assert.False(t, serviceMock.IsUpdateCounterCalled)
     assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+}
+
+func makeHandler(t *testing.T, service *mocks.MockMetricService) *MetricHandler {
+    return &MetricHandler{
+        log:     zaptest.NewLogger(t),
+        service: service,
+    }
 }

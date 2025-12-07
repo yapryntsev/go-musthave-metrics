@@ -36,7 +36,7 @@ var (
     flagDsn       string
 )
 
-func parseFlags(args []string, l *zap.Logger) {
+func parseFlags(args []string, log *zap.Logger) {
     fs := flag.NewFlagSet("flags", flag.ExitOnError)
 
     fs.StringVar(&flagAddr, flagAddrKey, flagAddrDefault, `server endpoint`)
@@ -47,7 +47,7 @@ func parseFlags(args []string, l *zap.Logger) {
 
     err := fs.Parse(args)
     if err != nil {
-        l.Fatal("failed to parse flags", zap.Error(err))
+        log.Fatal("failed to parse flags", zap.Error(err))
     }
 
     if envAddr, ok := os.LookupEnv(envAddrKey); ok {
@@ -57,7 +57,7 @@ func parseFlags(args []string, l *zap.Logger) {
     if envStoreInt, ok := os.LookupEnv(envStoreIntKey); ok {
         d, err := strconv.Atoi(envStoreInt)
         if err != nil {
-            l.Error(fmt.Sprintf("failed to parse env value: %s", envStoreIntKey))
+            log.Error(fmt.Sprintf("failed to parse env value: %s", envStoreIntKey))
         } else {
             flagStoreInt = uint(d)
         }
@@ -70,7 +70,7 @@ func parseFlags(args []string, l *zap.Logger) {
     if envRestore, ok := os.LookupEnv(envRestoreKey); ok {
         b, err := strconv.ParseBool(envRestore)
         if err != nil {
-            l.Error(fmt.Sprintf("failed to parse env value: %s", envRestoreKey))
+            log.Error(fmt.Sprintf("failed to parse env value: %s", envRestoreKey))
         } else {
             flagRestore = b
         }

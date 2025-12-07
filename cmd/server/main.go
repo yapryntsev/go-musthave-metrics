@@ -2,11 +2,10 @@ package main
 
 import (
     "context"
-    "database/sql"
     "fmt"
     "github.com/go-chi/chi/v5"
     chiMiddleware "github.com/go-chi/chi/v5/middleware"
-    "github.com/yapryntsev/go-musthave-metrics/internal/config/db"
+    "github.com/jackc/pgx/v5/pgxpool"
     "github.com/yapryntsev/go-musthave-metrics/internal/handler"
     "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
@@ -19,19 +18,21 @@ import (
     "time"
 )
 
-var logger *zap.Logger
+var log *zap.Logger
 
 func main() {
     setupLogger()
-    parseFlags(os.Args[1:], logger)
+    parseFlags(os.Args[1:], log)
 
-    server := configureServer(flagAddr, logger)
+    ctx := context.Background()
+    db := configureDB(ctx, log)
+    server := configureServer(flagAddr, db, log)
 
     serverError := make(chan error, 1)
     stopSignal := make(chan os.Signal, 1)
 
     go func() {
-        logger.Debug("server is running")
+        log.Debug("server is running")
         if err := server.ListenAndServe(); err != nil {
             serverError <- err
         }
@@ -41,52 +42,72 @@ func main() {
 
     select {
     case err := <-serverError:
-        logger.Debug("shutdown with server error", zap.Error(err))
+        log.Debug("shutdown with server error", zap.Error(err))
     case sig := <-stopSignal:
-        logger.Debug(fmt.Sprintf("shutdown with os signal: %v", sig))
+        log.Debug(fmt.Sprintf("shutdown with os signal: %v", sig))
     }
 
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
 
-    if err := server.Shutdown(ctx); err != nil {
-        logger.Error("failed to gracefully shutdown server with error", zap.Error(err))
-    }
+    defer func() {
+        log.Debug("server terminated")
+    }()
 
-    if err := db.CloseConnection(); err != nil {
-        logger.Error("failed to close connection to db", zap.Error(err))
-    }
+    defer func() {
+        if err := server.Shutdown(ctx); err != nil {
+            log.Error("failed to gracefully shutdown server with error", zap.Error(err))
+        }
+    }()
 
-    logger.Debug("server terminated")
+    defer db.Close()
 }
 
-func configureServer(addr string, l *zap.Logger) *http.Server {
-    l.Debug(fmt.Sprintf("server bootstrap, address: %s", addr))
-
-    var appDB *sql.DB
-    var err error
-
-    if flagDsn != "" {
-        appDB, err = db.NewConnection(flagDsn)
-    }
-    if err != nil {
-        l.Fatal("failed to create connection to db", zap.Error(err))
+func configureDB(ctx context.Context, log *zap.Logger) *pgxpool.Pool {
+    if flagDsn == "" {
         return nil
     }
 
+    log.Debug(fmt.Sprintf("connect to DB, dsn: %s", flagDsn))
+
+    config, err := pgxpool.ParseConfig(flagDsn)
+    if err != nil {
+        log.Fatal("failed to parse DSN", zap.Error(err))
+        return nil
+    }
+
+    config.MaxConnIdleTime = 5 * time.Second
+    config.MaxConnLifetime = 10 * time.Second
+
+    pool, err := pgxpool.NewWithConfig(ctx, config)
+    if err != nil {
+        log.Fatal("failed to create connection to db", zap.Error(err))
+        return nil
+    }
+
+    if err := pool.Ping(ctx); err != nil {
+        log.Fatal("failed to ping db", zap.Error(err))
+    }
+
+    return pool
+}
+
+func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Server {
+    log.Debug(fmt.Sprintf("server bootstrap, address: %s", addr))
+
     metricRepo := repository.New(
-        appDB,
+        db,
         time.Duration(flagStoreInt),
         flagStorePath,
         flagRestore,
-        l,
+        log,
     )
-    metricService := service.New(metricRepo, appDB)
-    metricHandler := handler.New(metricService, l)
+    metricService := service.New(metricRepo, db)
+    metricHandler := handler.New(metricService, log)
 
     r := chi.NewRouter()
-    r.Use(middleware.Logger(l))
-    r.Use(middleware.Compress(l))
+    r.Use(middleware.Logger(log))
+    r.Use(middleware.Compress(log))
     r.Use(chiMiddleware.Timeout(5 * time.Second))
 
     getValueEndpoint := fmt.Sprintf(
@@ -114,7 +135,7 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
     r.Get(getValueEndpoint, metricHandler.GetValue)
     r.Post(updateValueEndpoint, metricHandler.Update)
 
-    l.Debug("handlers registered")
+    log.Debug("handlers registered")
 
     return &http.Server{
         Addr:         addr,
@@ -128,7 +149,7 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
 func setupLogger() {
     var err error
 
-    logger, err = zap.NewDevelopment()
+    log, err = zap.NewDevelopment()
     if err != nil {
         panic(fmt.Errorf("failed to initiate logger: %w", err))
     }

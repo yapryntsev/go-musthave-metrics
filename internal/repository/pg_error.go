@@ -1,9 +1,9 @@
-package pgerror
+package repository
 
 import (
     "errors"
-    "github.com/jackc/pgx/v5/pgconn"
     "github.com/jackc/pgerrcode"
+    "github.com/jackc/pgx/v5/pgconn"
 )
 
 func IsRetriable(err error) bool {
@@ -23,7 +23,11 @@ func isRetriablePgError(pgErr *pgconn.PgError) bool {
     switch pgErr.Code {
     case pgerrcode.ConnectionException,
         pgerrcode.ConnectionDoesNotExist,
-        pgerrcode.ConnectionFailure:
+        pgerrcode.ConnectionFailure,
+        pgerrcode.TransactionRollback,
+        pgerrcode.TransactionIntegrityConstraintViolation,
+        pgerrcode.SerializationFailure,
+        pgerrcode.StatementCompletionUnknown:
         return true
     default:
         return false

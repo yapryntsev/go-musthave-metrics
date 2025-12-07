@@ -2,7 +2,7 @@ package repository
 
 import (
     "context"
-    "database/sql"
+    "github.com/jackc/pgx/v5/pgxpool"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "go.uber.org/zap"
     "time"
@@ -15,9 +15,11 @@ type MetricRepository interface {
     SetBatch(ctx context.Context, metrics []models.Metrics) error
 }
 
-func New(db *sql.DB, storeInt time.Duration, filePath string, restore bool, l *zap.Logger) MetricRepository {
-    if db != nil {
-        return newDatabaseRepository(db, l)
+func New(dbPool *pgxpool.Pool, storeInt time.Duration, filePath string, restore bool, l *zap.Logger) MetricRepository {
+    if dbPool != nil {
+        return retryableRepository{
+            repo: newDatabaseRepository(dbPool, l),
+        }
     }
 
     return newFileRepository(storeInt, filePath, restore, l)

@@ -2,6 +2,7 @@ package repository
 
 import (
     "bytes"
+    "context"
     "encoding/json"
     "errors"
     "fmt"
@@ -36,18 +37,33 @@ func newFileRepository(storeInt time.Duration, filePath string, restore bool, l 
     return repo
 }
 
-func (r *FileMetricRepository) GetAll() ([]*models.Metrics, error) {
-    return r.inMemory.GetAll()
+func (r *FileMetricRepository) GetAll(ctx context.Context) ([]models.Metrics, error) {
+    return r.inMemory.GetAll(ctx)
 }
 
-func (r *FileMetricRepository) Get(mID string, mType string) (*models.Metrics, error) {
-    return r.inMemory.Get(mID, mType)
+func (r *FileMetricRepository) Get(ctx context.Context, mID string, mType string) (*models.Metrics, error) {
+    return r.inMemory.Get(ctx, mID, mType)
 }
 
-func (r *FileMetricRepository) Set(metric *models.Metrics) error {
-    err := r.inMemory.Set(metric)
+func (r *FileMetricRepository) Set(ctx context.Context, metric models.Metrics) error {
+    err := r.inMemory.Set(ctx, metric)
     if err != nil {
         return err
+    }
+
+    if r.storeInt == 0 || time.Since(r.lastUpdate) >= r.storeInt {
+        r.WriteToFile()
+    }
+
+    return nil
+}
+
+func (r *FileMetricRepository) SetBatch(ctx context.Context, metrics []models.Metrics) error {
+    for _, m := range metrics {
+        err := r.inMemory.Set(ctx, m)
+        if err != nil {
+            return err
+        }
     }
 
     if r.storeInt == 0 || time.Since(r.lastUpdate) >= r.storeInt {

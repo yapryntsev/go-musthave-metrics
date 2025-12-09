@@ -81,8 +81,8 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
         flagRestore,
         l,
     )
-    metricService := service.New(metricRepo)
-    metricHandler := handler.New(metricService, appDB, l)
+    metricService := service.New(metricRepo, appDB)
+    metricHandler := handler.New(metricService, l)
 
     r := chi.NewRouter()
     r.Use(middleware.Logger(l))
@@ -108,6 +108,8 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
     r.Post("/value/", metricHandler.GetObject)
     r.Post("/update", metricHandler.UpdateObject)
     r.Post("/update/", metricHandler.UpdateObject)
+    r.Post("/updates", metricHandler.UpdateBatch)
+    r.Post("/updates/", metricHandler.UpdateBatch)
 
     r.Get(getValueEndpoint, metricHandler.GetValue)
     r.Post(updateValueEndpoint, metricHandler.Update)

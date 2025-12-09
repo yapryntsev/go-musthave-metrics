@@ -2,8 +2,9 @@ CREATE TYPE metric_type AS enum ('counter', 'gauge');
 
 CREATE TABLE metrics
 (
-    id    TEXT primary key not null,
+    id    TEXT             not null,
     type  metric_type      not null,
-    delta integer,
-    value double precision
+    delta BIGINT,
+    value DOUBLE PRECISION,
+    PRIMARY KEY (id, type)
 );

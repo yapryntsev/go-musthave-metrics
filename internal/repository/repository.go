@@ -1,6 +1,7 @@
 package repository
 
 import (
+    "context"
     "database/sql"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "go.uber.org/zap"
@@ -8,9 +9,10 @@ import (
 )
 
 type MetricRepository interface {
-    GetAll() ([]*models.Metrics, error)
-    Get(mID string, mType string) (*models.Metrics, error)
-    Set(metric *models.Metrics) error
+    GetAll(ctx context.Context) ([]models.Metrics, error)
+    Get(ctx context.Context, mID string, mType string) (*models.Metrics, error)
+    Set(ctx context.Context, metric models.Metrics) error
+    SetBatch(ctx context.Context, metrics []models.Metrics) error
 }
 
 func New(db *sql.DB, storeInt time.Duration, filePath string, restore bool, l *zap.Logger) MetricRepository {

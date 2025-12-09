@@ -10,18 +10,17 @@ import (
     "go.uber.org/zap"
     "net/http"
     "strconv"
-    "time"
 )
 
 const GetAllRowFormat = "%s: %s\n"
 
 type MetricHandler struct {
-    l       *zap.Logger
+    log     *zap.Logger
     service service.MetricService
 }
 
-func New(service service.MetricService, l *zap.Logger) MetricHandler {
-    return MetricHandler{l: l, service: service}
+func New(service service.MetricService, log *zap.Logger) MetricHandler {
+    return MetricHandler{log: log, service: service}
 }
 
 func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +31,7 @@ func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 
     res, err := h.service.GetAll(r.Context())
     if err != nil {
-        h.l.Error("failed to get all metrics", zap.Error(err))
+        h.log.Error("failed to get all metrics", zap.Error(err))
 
         w.WriteHeader(http.StatusInternalServerError)
         return
@@ -43,15 +42,15 @@ func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
         switch m.MType {
         case models.Counter:
             v := strconv.Itoa(int(*m.Delta))
-            fmt.Fprintf(b, GetAllRowFormat, m.ID, v)
+            _, _ = fmt.Fprintf(b, GetAllRowFormat, m.ID, v)
         case models.Gauge:
             v := fmt.Sprintf(`%.f`, *m.Value)
-            fmt.Fprintf(b, GetAllRowFormat, m.ID, v)
+            _, _ = fmt.Fprintf(b, GetAllRowFormat, m.ID, v)
         }
     }
 
     w.Header().Set("Content-Type", "text/html")
-    w.Write(b.Bytes())
+    _, _ = w.Write(b.Bytes())
 }
 
 func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +74,7 @@ func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 
     ok, err := h.service.Get(r.Context(), metric)
     if err != nil {
-        h.l.Error(
+        h.log.Error(
             "failed to get metric",
             zap.Error(err),
             zap.String("mID", mID),
@@ -101,7 +100,7 @@ func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
     }
 
     if err != nil {
-        h.l.Error("failed to format metric value", zap.Error(err))
+        h.log.Error("failed to format metric value", zap.Error(err))
 
         w.WriteHeader(http.StatusInternalServerError)
         return
@@ -118,7 +117,7 @@ func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
 
     metric := &models.Metrics{}
     if err := json.NewDecoder(r.Body).Decode(metric); err != nil {
-        h.l.Error("failed to decode request body", zap.Error(err))
+        h.log.Error("failed to decode request body", zap.Error(err))
 
         w.WriteHeader(http.StatusBadRequest)
         return
@@ -126,7 +125,7 @@ func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
 
     ok, err := h.service.Get(r.Context(), metric)
     if err != nil {
-        h.l.Error(
+        h.log.Error(
             "failed to get metric",
             zap.Error(err),
             zap.String("mID", metric.ID),
@@ -143,7 +142,7 @@ func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
     }
 
     if err := json.NewEncoder(w).Encode(metric); err != nil {
-        h.l.Error("failed to encode response", zap.Error(err))
+        h.log.Error("failed to encode response", zap.Error(err))
 
         w.WriteHeader(http.StatusInternalServerError)
         return
@@ -192,7 +191,7 @@ func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
     }
 
     if err != nil {
-        h.l.Error("failed to parse metric value", zap.Error(err), zap.String("value", rawValue))
+        h.log.Error("failed to parse metric value", zap.Error(err), zap.String("value", rawValue))
 
         w.WriteHeader(http.StatusBadRequest)
         return
@@ -209,7 +208,7 @@ func (h MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
 
     metric := &models.Metrics{}
     if err := json.NewDecoder(r.Body).Decode(metric); err != nil {
-        h.l.Error("failed to decode request body", zap.Error(err))
+        h.log.Error("failed to decode request body", zap.Error(err))
 
         w.WriteHeader(http.StatusBadRequest)
         return
@@ -224,11 +223,8 @@ func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
-    defer cancel()
-
-    if err := h.service.Ping(ctx); err != nil {
-        h.l.Error("failed to ping db", zap.Error(err))
+    if err := h.service.Ping(r.Context()); err != nil {
+        h.log.Error("failed to ping db", zap.Error(err))
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
@@ -244,14 +240,14 @@ func (h MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 
     var metric []models.Metrics
     if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
-        h.l.Error("failed to decode request body", zap.Error(err))
+        h.log.Error("failed to decode request body", zap.Error(err))
 
         w.WriteHeader(http.StatusBadRequest)
         return
     }
 
     if err := h.service.UpdateBatch(r.Context(), metric); err != nil {
-        h.l.Error("failed to save batch", zap.Error(err))
+        h.log.Error("failed to save batch", zap.Error(err))
 
         w.WriteHeader(http.StatusInternalServerError)
         return
@@ -279,7 +275,8 @@ func (h MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, 
     }
 
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        h.log.Error("failed to update metric", zap.Error(err))
+        w.WriteHeader(http.StatusInternalServerError)
         return
     }
 

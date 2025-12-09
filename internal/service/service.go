@@ -2,7 +2,7 @@ package service
 
 import (
     "context"
-    "database/sql"
+    "github.com/jackc/pgx/v5/pgxpool"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "maps"
@@ -26,10 +26,10 @@ type MetricService interface {
 
 type Service struct {
     repo repository.MetricRepository
-    db   *sql.DB
+    db   *pgxpool.Pool
 }
 
-func New(repo repository.MetricRepository, db *sql.DB,) *Service {
+func New(repo repository.MetricRepository, db *pgxpool.Pool) *Service {
     return &Service{
         repo: repo,
         db:   db,
@@ -115,7 +115,7 @@ func (s *Service) UpdateBatch(ctx context.Context, metrics []models.Metrics) err
 }
 
 func (s *Service) Ping(ctx context.Context) error {
-    return s.db.PingContext(ctx)
+    return s.db.Ping(ctx)
 }
 
 func (s *Service) getCurrentCounterMetric(ctx context.Context, mID string) (models.Metrics, error) {

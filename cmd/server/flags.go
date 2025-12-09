@@ -13,16 +13,19 @@ const (
     flagStoreIntDefault  = uint(300)
     flagStorePathDefault = "./storage"
     flagRestoreDefault   = true
+    flagDsnDefault       = ""
 
     flagAddrKey      = "a"
     flagStoreIntKey  = "i"
     flagStorePathKey = "f"
     flagRestoreKey   = "r"
+    flagDsnKey       = "d"
 
     envAddrKey      = "ADDRESS"
     envStoreIntKey  = "STORE_INTERVAL"
     envStorePathKey = "FILE_STORAGE_PATH"
     envRestoreKey   = "RESTORE"
+    envDsnKey       = "DATABASE_DSN"
 )
 
 var (
@@ -30,6 +33,7 @@ var (
     flagStoreInt  uint
     flagStorePath string
     flagRestore   bool
+    flagDsn       string
 )
 
 func parseFlags(args []string, l *zap.Logger) {
@@ -39,6 +43,7 @@ func parseFlags(args []string, l *zap.Logger) {
     fs.StringVar(&flagStorePath, flagStorePathKey, flagStorePathDefault, "file storage path")
     fs.BoolVar(&flagRestore, flagRestoreKey, flagRestoreDefault, "should restore storage state from file")
     fs.UintVar(&flagStoreInt, flagStoreIntKey, flagStoreIntDefault, "file write frequency")
+    fs.StringVar(&flagDsn, flagDsnKey, flagDsnDefault, "data source name")
 
     err := fs.Parse(args)
     if err != nil {
@@ -69,5 +74,9 @@ func parseFlags(args []string, l *zap.Logger) {
         } else {
             flagRestore = b
         }
+    }
+
+    if envDsn, ok := os.LookupEnv(envDsnKey); ok {
+        flagDsn = envDsn
     }
 }

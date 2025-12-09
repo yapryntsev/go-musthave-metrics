@@ -2,6 +2,8 @@ package handler
 
 import (
     "bytes"
+    "context"
+    "database/sql"
     "encoding/json"
     "fmt"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
@@ -9,17 +11,19 @@ import (
     "go.uber.org/zap"
     "net/http"
     "strconv"
+    "time"
 )
 
 const GetAllRowFormat = "%s: %s\n"
 
 type MetricHandler struct {
     l       *zap.Logger
+    db      *sql.DB
     service service.MetricService
 }
 
-func New(service service.MetricService, l *zap.Logger) MetricHandler {
-    return MetricHandler{l: l, service: service}
+func New(service service.MetricService, db *sql.DB, l *zap.Logger) MetricHandler {
+    return MetricHandler{l: l, db: db, service: service}
 }
 
 func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -214,6 +218,24 @@ func (h MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
     }
 
     h.updateMetric(w, metric)
+}
+
+func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        return
+    }
+
+    ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
+    defer cancel()
+
+    if err := h.db.PingContext(ctx); err != nil {
+        h.l.Error("failed to ping db", zap.Error(err))
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
 }
 
 func (h MetricHandler) updateMetric(w http.ResponseWriter, metric *models.Metrics) {

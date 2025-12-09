@@ -75,6 +75,7 @@ func configureServer(addr string, l *zap.Logger) *http.Server {
     }
 
     metricRepo := repository.New(
+        appDB,
         time.Duration(flagStoreInt),
         flagStorePath,
         flagRestore,

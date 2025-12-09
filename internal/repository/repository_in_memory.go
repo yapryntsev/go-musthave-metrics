@@ -12,7 +12,7 @@ type MemoryMetricRepository struct {
     storage map[string]*models.Metrics
 }
 
-func NewInMemoryRepo() *MemoryMetricRepository {
+func newInMemoryRepo() *MemoryMetricRepository {
     return &MemoryMetricRepository{
         storage: make(map[string]*models.Metrics),
     }

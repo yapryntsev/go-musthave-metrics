@@ -4,9 +4,11 @@ import (
     "bytes"
     "compress/gzip"
     "context"
+    "encoding/hex"
     "encoding/json"
     "errors"
     "fmt"
+    "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
     "math/rand"
     "net/http"
     "runtime"
@@ -20,17 +22,18 @@ import (
 type Agent struct {
     addr           string
     stats          *runtime.MemStats
-    l              *zap.Logger
+    log            *zap.Logger
     client         *resty.Client
     reportInterval uint
     pollInterval   uint
+    signKey        string
 
     // Metrics
     pollCount int
     randValue float64
 }
 
-func New(addr string, reportInterval uint, pollInterval uint, l *zap.Logger) *Agent {
+func New(addr string, reportInterval uint, pollInterval uint, signKey string, log *zap.Logger) *Agent {
     httpClient := http.Client{
         Timeout: 5 * time.Second,
     }
@@ -46,10 +49,11 @@ func New(addr string, reportInterval uint, pollInterval uint, l *zap.Logger) *Ag
     return &Agent{
         addr:           addr,
         stats:          &runtime.MemStats{},
-        l:              l,
+        log:            log,
         client:         restyClient,
         reportInterval: reportInterval,
         pollInterval:   pollInterval,
+        signKey:        signKey,
     }
 }
 
@@ -76,7 +80,7 @@ func (a *Agent) scheduleMetricsFetchAndUpload(ctx context.Context, lastReportTim
     a.randValue = rand.New(rand.NewSource(seed)).Float64()
 
     runtime.ReadMemStats(a.stats)
-    a.l.Debug("metric collected")
+    a.log.Debug("metric collected")
 
     if time.Since(*lastReportTime).Seconds() < float64(a.reportInterval) {
         return nil
@@ -93,7 +97,7 @@ func (a *Agent) sendMetrics(ctx context.Context) error {
     alloc := float64(stats.Alloc)
     bhs := float64(stats.BuckHashSys)
     frees := float64(stats.Frees)
-    gccpf := float64(stats.GCCPUFraction)
+    gccpf := stats.GCCPUFraction
     gcys := float64(stats.GCSys)
     ha := float64(stats.HeapAlloc)
     hid := float64(stats.HeapIdle)
@@ -166,7 +170,7 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 
     var buf bytes.Buffer
     zw := gzip.NewWriter(&buf)
-    defer zw.Close()
+    defer func() { _ = zw.Close() }()
 
     if err := json.NewEncoder(zw).Encode(metrics); err != nil {
         return err
@@ -176,21 +180,30 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
         return err
     }
 
-    resp, err := a.client.R().
+    req := a.client.R().
         SetContext(ctx).
         SetHeader("Content-Type", "application/json").
-        SetHeader("Content-Encoding", "gzip").
+        SetHeader("Content-Encoding", "gzip")
+
+    if a.signKey != "" {
+        hasher := middleware.NewHasher(a.signKey)
+        hasher.Write(buf.Bytes())
+        hashSum := hasher.Sum(nil)
+        req = req.SetHeader(middleware.SignedBodyHeader, hex.EncodeToString(hashSum))
+    }
+
+    resp, err := req.
         SetBody(buf.Bytes()).
         Post(fmt.Sprintf("http://%s/updates", a.addr))
 
     if err != nil {
-        a.l.Error("failed to send metrics", zap.Error(err))
+        a.log.Error("failed to send metrics", zap.Error(err))
     }
 
-    a.l.Debug("metrics sent")
+    a.log.Debug("metrics sent")
 
     if resp.StatusCode() != http.StatusOK {
-        a.l.Error("unexpected status code", zap.Int("code", resp.StatusCode()))
+        a.log.Error("unexpected status code", zap.Int("code", resp.StatusCode()))
     }
 
     return nil

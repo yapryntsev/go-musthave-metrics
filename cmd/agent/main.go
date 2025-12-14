@@ -40,5 +40,5 @@ func main() {
 
 func configureAgent(l *zap.Logger) *agent.Agent {
     l.Debug("agent bootstrap")
-    return agent.New(flagAddr, flagReportInt, flagPollInt, l)
+    return agent.New(flagAddr, flagReportInt, flagPollInt, flagSignKey, l)
 }

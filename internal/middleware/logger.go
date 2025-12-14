@@ -21,10 +21,10 @@ func Logger(log *zap.Logger) func(next http.Handler) http.Handler {
             duration := time.Since(start)
 
             var status int
-            if lw.data.status == 0 {
+            if lw.data.statusCode == 0 {
                 status = http.StatusOK
             } else {
-                status = lw.data.status
+                status = lw.data.statusCode
             }
 
             log.Debug(
@@ -43,8 +43,8 @@ func Logger(log *zap.Logger) func(next http.Handler) http.Handler {
 
 type (
     responseData struct {
-        status int
-        size   int
+        statusCode int
+        size       int
     }
 
     loggingResponseWriter struct {
@@ -61,5 +61,5 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
     r.ResponseWriter.WriteHeader(statusCode)
-    r.data.status = statusCode
+    r.data.statusCode = statusCode
 }

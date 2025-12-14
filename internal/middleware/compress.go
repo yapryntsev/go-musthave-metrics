@@ -33,8 +33,8 @@ func Compress(log *zap.Logger) func(next http.Handler) http.Handler {
             ow := w
             if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
                 cw := &compressWriter{
-                    w:  w,
-                    zw: gzip.NewWriter(w),
+                    ResponseWriter: w,
+                    zw:             gzip.NewWriter(w),
                 }
                 defer cw.Close()
 
@@ -75,26 +75,22 @@ func (c *compressReader) Close() error {
 }
 
 type compressWriter struct {
-    w         http.ResponseWriter
+    http.ResponseWriter
     zw        *gzip.Writer
     wroteBody bool
 }
 
 func (c *compressWriter) Header() http.Header {
-    return c.w.Header()
+    return c.ResponseWriter.Header()
 }
 
 func (c *compressWriter) Write(bytes []byte) (int, error) {
     if !c.wroteBody {
-        c.w.Header().Set("Content-Encoding", "gzip")
+        c.ResponseWriter.Header().Set("Content-Encoding", "gzip")
         c.wroteBody = true
     }
 
     return c.zw.Write(bytes)
-}
-
-func (c *compressWriter) WriteHeader(statusCode int) {
-    c.w.WriteHeader(statusCode)
 }
 
 func (c *compressWriter) Close() error {

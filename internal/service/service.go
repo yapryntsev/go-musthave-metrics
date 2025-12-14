@@ -2,6 +2,7 @@ package service
 
 import (
     "context"
+    "errors"
     "github.com/jackc/pgx/v5/pgxpool"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
@@ -115,6 +116,10 @@ func (s *Service) UpdateBatch(ctx context.Context, metrics []models.Metrics) err
 }
 
 func (s *Service) Ping(ctx context.Context) error {
+    if s.db == nil {
+        return errors.New("db is not configured")
+    }
+
     return s.db.Ping(ctx)
 }
 

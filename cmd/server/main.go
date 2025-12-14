@@ -4,7 +4,6 @@ import (
     "context"
     "fmt"
     "github.com/go-chi/chi/v5"
-    chiMiddleware "github.com/go-chi/chi/v5/middleware"
     "github.com/jackc/pgx/v5/pgxpool"
     "github.com/yapryntsev/go-musthave-metrics/internal/handler"
     "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
@@ -60,7 +59,11 @@ func main() {
         }
     }()
 
-    defer db.Close()
+    defer func() {
+        if db != nil {
+            db.Close()
+        }
+    }()
 }
 
 func configureDB(ctx context.Context, log *zap.Logger) *pgxpool.Pool {
@@ -107,8 +110,8 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
 
     r := chi.NewRouter()
     r.Use(middleware.Logger(log))
+    r.Use(middleware.SignBody(flagSignKey, log))
     r.Use(middleware.Compress(log))
-    r.Use(chiMiddleware.Timeout(5 * time.Second))
 
     getValueEndpoint := fmt.Sprintf(
         `/value/{%s}/{%s}`,
@@ -127,6 +130,7 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
 
     r.Post("/value", metricHandler.GetObject)
     r.Post("/value/", metricHandler.GetObject)
+
     r.Post("/update", metricHandler.UpdateObject)
     r.Post("/update/", metricHandler.UpdateObject)
     r.Post("/updates", metricHandler.UpdateBatch)

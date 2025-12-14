@@ -12,20 +12,24 @@ const (
     flagAddrDefault      = "localhost:8080"
     flagReportIntDefault = uint(10)
     flagPollIntDefault   = uint(2)
+    flagSignKeyDefault   = ""
 
     flagAddrKey      = "a"
     flagReportIntKey = "r"
     flagPollIntKey   = "p"
+    flagSignKeyKey   = "k"
 
     envAddrKey      = "ADDRESS"
     envReportIntKey = "REPORT_INTERVAL"
     envPollIntKey   = "POLL_INTERVAL"
+    envSignKeyKey   = "KEY"
 )
 
 var (
     flagAddr      string
     flagReportInt uint
     flagPollInt   uint
+    flagSignKey   string
 )
 
 func parseFlags(args []string, l *zap.Logger) {
@@ -33,6 +37,7 @@ func parseFlags(args []string, l *zap.Logger) {
 
     fs.StringVar(&flagAddr, flagAddrKey, flagAddrDefault, `server endpoint`)
     fs.UintVar(&flagPollInt, flagPollIntKey, flagPollIntDefault, `frequency of gathering metrics in sec`)
+    fs.StringVar(&flagSignKey, flagSignKeyKey, flagSignKeyDefault, "key used to sign request body")
     fs.UintVar(
         &flagReportInt,
         flagReportIntKey,
@@ -65,5 +70,9 @@ func parseFlags(args []string, l *zap.Logger) {
         } else {
             flagPollInt = uint(f)
         }
+    }
+
+    if signKey, ok := os.LookupEnv(envSignKeyKey); ok {
+        flagSignKey = signKey
     }
 }

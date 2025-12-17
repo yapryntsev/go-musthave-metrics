@@ -8,10 +8,13 @@ import (
     "encoding/json"
     "errors"
     "fmt"
+    "github.com/docker/docker/pkg/meminfo"
+    "github.com/shirou/gopsutil/cpu"
     "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
     "math/rand"
     "net/http"
     "runtime"
+    "sync"
     "time"
 
     "github.com/go-resty/resty/v2"
@@ -20,6 +23,7 @@ import (
 )
 
 type Agent struct {
+    sync.RWMutex
     addr           string
     stats          *runtime.MemStats
     log            *zap.Logger
@@ -29,8 +33,11 @@ type Agent struct {
     signKey        string
 
     // Metrics
-    pollCount int
-    randValue float64
+    pollCount      int
+    randValue      float64
+    memTotal       int64
+    memFree        int64
+    cpuUtilization []float64
 }
 
 func New(addr string, reportInterval uint, pollInterval uint, signKey string, log *zap.Logger) *Agent {
@@ -58,41 +65,93 @@ func New(addr string, reportInterval uint, pollInterval uint, signKey string, lo
 }
 
 func (a *Agent) StartGathering(ctx context.Context) error {
-    lastReportTime := time.Now()
+    sendErrChan := make(chan error)
+    fetchUtilErrChan := make(chan error)
+
+    go a.fetchMetrics(ctx)
+    go a.fetchUtilMetrics(ctx, fetchUtilErrChan)
+    go a.sendMetrics(ctx, sendErrChan)
+
+    err := <-fanIn(sendErrChan, fetchUtilErrChan)
+    return err
+}
+
+func (a *Agent) fetchUtilMetrics(ctx context.Context, errChan chan<- error) {
+    defer close(errChan)
+    ticker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
+
     for {
         select {
         case <-ctx.Done():
-            return nil
-        default:
-            err := a.scheduleMetricsFetchAndUpload(ctx, &lastReportTime)
+            return
+        case <-ticker.C:
+            cpuUtilization, err := cpu.PercentWithContext(ctx, 0, true)
             if err != nil {
-                return err
+                errChan <- fmt.Errorf("failed to read cpu utilization info: %w", err)
+                return
+            }
+
+            info, err := meminfo.Read()
+            if err != nil {
+                errChan <- fmt.Errorf("failed to read memory info: %w", err)
+                return
+            }
+
+            a.RWMutex.Lock()
+            a.cpuUtilization = cpuUtilization
+            a.memTotal = info.MemTotal
+            a.memFree = info.MemFree
+            a.RWMutex.Unlock()
+        }
+    }
+}
+
+func (a *Agent) fetchMetrics(ctx context.Context) {
+    ticker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
+
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            seed := time.Now().Unix()
+            randValue := rand.New(rand.NewSource(seed)).Float64()
+
+            a.RWMutex.Lock()
+            a.pollCount++
+            a.randValue = randValue
+
+            runtime.ReadMemStats(a.stats)
+            a.RWMutex.Unlock()
+
+            a.log.Debug("metric collected")
+        }
+    }
+}
+
+func (a *Agent) sendMetrics(ctx context.Context, errChan chan<- error) {
+    defer close(errChan)
+    ticker := time.NewTicker(time.Duration(a.reportInterval) * time.Second)
+
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            batch := a.makeMetricsBatch()
+            err := a.sendBatch(ctx, batch)
+            if err != nil {
+                errChan <- fmt.Errorf("failed to send metrics batch: %w", err)
+                return
             }
         }
     }
 }
 
-func (a *Agent) scheduleMetricsFetchAndUpload(ctx context.Context, lastReportTime *time.Time) error {
-    time.Sleep(time.Duration(a.pollInterval) * time.Second)
-
-    a.pollCount++
-    seed := time.Now().Unix()
-    a.randValue = rand.New(rand.NewSource(seed)).Float64()
-
-    runtime.ReadMemStats(a.stats)
-    a.log.Debug("metric collected")
-
-    if time.Since(*lastReportTime).Seconds() < float64(a.reportInterval) {
-        return nil
-    }
-    *lastReportTime = time.Now()
-
-    err := a.sendMetrics(ctx)
-    return err
-}
-
-func (a *Agent) sendMetrics(ctx context.Context) error {
+func (a *Agent) makeMetricsBatch() []models.Metrics {
+    a.RWMutex.RLock()
     stats := a.stats
+    a.RWMutex.RUnlock()
 
     alloc := float64(stats.Alloc)
     bhs := float64(stats.BuckHashSys)
@@ -122,6 +181,8 @@ func (a *Agent) sendMetrics(ctx context.Context) error {
     sys := float64(stats.Sys)
     ta := float64(stats.TotalAlloc)
     pc := int64(a.pollCount)
+    memTotal := float64(a.memTotal)
+    memFree := float64(a.memFree)
 
     metrics := []models.Metrics{
         {ID: "RandomValue", MType: models.Gauge, Value: &a.randValue},
@@ -153,14 +214,17 @@ func (a *Agent) sendMetrics(ctx context.Context) error {
         {ID: "Sys", MType: models.Gauge, Value: &sys},
         {ID: "TotalAlloc", MType: models.Gauge, Value: &ta},
         {ID: "PollCount", MType: models.Counter, Delta: &pc},
+        {ID: "TotalMemory", MType: models.Gauge, Value: &memTotal},
+        {ID: "FreeMemory", MType: models.Gauge, Value: &memFree},
     }
 
-    err := a.sendBatch(ctx, metrics)
-    if err != nil {
-        return fmt.Errorf("failed to send metrics batch: %w", err)
+    for i, v := range a.cpuUtilization {
+        vCopy := v
+        m := models.Metrics{ID: fmt.Sprintf("CPUutilization%d", i+1), MType: models.Gauge, Value: &vCopy}
+        metrics = append(metrics, m)
     }
 
-    return nil
+    return metrics
 }
 
 func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
@@ -198,6 +262,7 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 
     if err != nil {
         a.log.Error("failed to send metrics", zap.Error(err))
+        return nil
     }
 
     a.log.Debug("metrics sent")
@@ -207,4 +272,28 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
     }
 
     return nil
+}
+
+func fanIn[I any](chs ...<-chan I) <-chan I {
+    var wg sync.WaitGroup
+    out := make(chan I)
+
+    for _, ch := range chs {
+        chCopy := ch
+        wg.Add(1)
+
+        go func() {
+            defer wg.Done()
+            for v := range chCopy {
+                out <- v
+            }
+        }()
+    }
+
+    go func() {
+        wg.Wait()
+        close(out)
+    }()
+
+    return out
 }

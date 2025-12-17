@@ -6,7 +6,6 @@ import (
     "crypto/sha256"
     "encoding/hex"
     "errors"
-    "fmt"
     "go.uber.org/zap"
     "hash"
     "io"
@@ -38,7 +37,7 @@ func SignBody(key string, log *zap.Logger) func(next http.Handler) http.Handler 
                 return
             }
             r.Body = io.NopCloser(bytes.NewReader(body))
-            fmt.Println(r.Header)
+
             if !isSignatureValid(signature, body, NewHasher(key)) {
                 w.WriteHeader(http.StatusBadRequest)
                 return

@@ -24,6 +24,7 @@ func main() {
     go func() {
         l.Debug("agent is running")
         if err := appAgent.StartGathering(ctx); err != nil {
+            cancel()
             l.Error("agent failed with error", zap.Error(err))
             os.Exit(1)
         }

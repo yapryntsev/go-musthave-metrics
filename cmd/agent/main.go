@@ -17,6 +17,7 @@ func main() {
     }
 
     parseFlags(os.Args[1:], l)
+    stopSignal := make(chan struct{}, 1)
 
     appAgent := configureAgent(l)
     ctx, cancel := context.WithCancel(context.Background())
@@ -24,14 +25,20 @@ func main() {
     go func() {
         l.Debug("agent is running")
         if err := appAgent.StartGathering(ctx); err != nil {
-            cancel()
             l.Error("agent failed with error", zap.Error(err))
-            os.Exit(1)
+            stopSignal <- struct{}{}
         }
     }()
 
-    stopSignal := make(chan os.Signal, 1)
-    signal.Notify(stopSignal, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        ch := make(chan os.Signal, 1)
+
+        signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+        sig := <-ch
+
+        l.Debug("shutting down with os signal", zap.String("signal", sig.String()))
+        stopSignal <- struct{}{}
+    }()
 
     <-stopSignal
 

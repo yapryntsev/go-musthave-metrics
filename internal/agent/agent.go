@@ -11,6 +11,7 @@ import (
     "github.com/docker/docker/pkg/meminfo"
     "github.com/shirou/gopsutil/cpu"
     "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
+    "golang.org/x/sync/errgroup"
     "math/rand"
     "net/http"
     "runtime"
@@ -23,7 +24,7 @@ import (
 )
 
 type Agent struct {
-    sync.RWMutex
+    mu             sync.RWMutex
     addr           string
     stats          *runtime.MemStats
     log            *zap.Logger
@@ -65,43 +66,57 @@ func New(addr string, reportInterval uint, pollInterval uint, signKey string, lo
 }
 
 func (a *Agent) StartGathering(ctx context.Context) error {
-    sendErrChan := make(chan error)
-    fetchUtilErrChan := make(chan error)
+    g, ctx := errgroup.WithContext(ctx)
 
-    go a.fetchMetrics(ctx)
-    go a.fetchUtilMetrics(ctx, fetchUtilErrChan)
-    go a.sendMetrics(ctx, sendErrChan)
+    g.Go(
+        func() error {
+            a.fetchMetrics(ctx)
+            return nil
+        },
+    )
 
-    err := <-fanIn(sendErrChan, fetchUtilErrChan)
-    return err
+    g.Go(
+        func() error {
+            return a.fetchUtilMetrics(ctx)
+        },
+    )
+
+    g.Go(
+        func() error {
+            return a.sendMetrics(ctx)
+        },
+    )
+
+    if err := g.Wait(); err != nil {
+        return err
+    }
+
+    return nil
 }
 
-func (a *Agent) fetchUtilMetrics(ctx context.Context, errChan chan<- error) {
-    defer close(errChan)
+func (a *Agent) fetchUtilMetrics(ctx context.Context) error {
     ticker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
 
     for {
         select {
         case <-ctx.Done():
-            return
+            return nil
         case <-ticker.C:
             cpuUtilization, err := cpu.PercentWithContext(ctx, 0, true)
             if err != nil {
-                errChan <- fmt.Errorf("failed to read cpu utilization info: %w", err)
-                return
+                return fmt.Errorf("failed to read cpu utilization info: %w", err)
             }
 
             info, err := meminfo.Read()
             if err != nil {
-                errChan <- fmt.Errorf("failed to read memory info: %w", err)
-                return
+                return fmt.Errorf("failed to read memory info: %w", err)
             }
 
-            a.RWMutex.Lock()
+            a.mu.Lock()
             a.cpuUtilization = cpuUtilization
             a.memTotal = info.MemTotal
             a.memFree = info.MemFree
-            a.RWMutex.Unlock()
+            a.mu.Unlock()
         }
     }
 }
@@ -117,41 +132,39 @@ func (a *Agent) fetchMetrics(ctx context.Context) {
             seed := time.Now().Unix()
             randValue := rand.New(rand.NewSource(seed)).Float64()
 
-            a.RWMutex.Lock()
+            a.mu.Lock()
             a.pollCount++
             a.randValue = randValue
 
             runtime.ReadMemStats(a.stats)
-            a.RWMutex.Unlock()
+            a.mu.Unlock()
 
             a.log.Debug("metric collected")
         }
     }
 }
 
-func (a *Agent) sendMetrics(ctx context.Context, errChan chan<- error) {
-    defer close(errChan)
+func (a *Agent) sendMetrics(ctx context.Context) error {
     ticker := time.NewTicker(time.Duration(a.reportInterval) * time.Second)
 
     for {
         select {
         case <-ctx.Done():
-            return
+            return nil
         case <-ticker.C:
             batch := a.makeMetricsBatch()
             err := a.sendBatch(ctx, batch)
             if err != nil {
-                errChan <- fmt.Errorf("failed to send metrics batch: %w", err)
-                return
+                return fmt.Errorf("failed to send metrics batch: %w", err)
             }
         }
     }
 }
 
 func (a *Agent) makeMetricsBatch() []models.Metrics {
-    a.RWMutex.RLock()
+    a.mu.RLock()
     stats := a.stats
-    a.RWMutex.RUnlock()
+    a.mu.RUnlock()
 
     alloc := float64(stats.Alloc)
     bhs := float64(stats.BuckHashSys)
@@ -272,28 +285,4 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
     }
 
     return nil
-}
-
-func fanIn[I any](chs ...<-chan I) <-chan I {
-    var wg sync.WaitGroup
-    out := make(chan I)
-
-    for _, ch := range chs {
-        chCopy := ch
-        wg.Add(1)
-
-        go func() {
-            defer wg.Done()
-            for v := range chCopy {
-                out <- v
-            }
-        }()
-    }
-
-    go func() {
-        wg.Wait()
-        close(out)
-    }()
-
-    return out
 }

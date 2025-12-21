@@ -24,39 +24,40 @@ func SignBody(key string, log *zap.Logger) func(next http.Handler) http.Handler 
             return next
         }
 
-        fn := func(w http.ResponseWriter, r *http.Request) {
-            signature := r.Header.Get(SignedBodyHeader)
-            if signature == "" {
-                next.ServeHTTP(w, r)
-                return
-            }
+        return http.HandlerFunc(
+            func(w http.ResponseWriter, r *http.Request) {
+                signature := r.Header.Get(SignedBodyHeader)
+                if signature == "" {
+                    next.ServeHTTP(w, r)
+                    return
+                }
 
-            body, err := io.ReadAll(r.Body)
-            if err != nil {
-                log.Error("failed to read body", zap.Error(err))
-                return
-            }
-            r.Body = io.NopCloser(bytes.NewReader(body))
+                body, err := io.ReadAll(r.Body)
+                if err != nil {
+                    log.Error("failed to read body", zap.Error(err))
+                    w.WriteHeader(http.StatusInternalServerError)
+                    return
+                }
+                r.Body = io.NopCloser(bytes.NewReader(body))
 
-            if !isSignatureValid(signature, body, NewHasher(key)) {
-                w.WriteHeader(http.StatusBadRequest)
-                return
-            }
+                if !isSignatureValid(signature, body, NewHasher(key)) {
+                    w.WriteHeader(http.StatusBadRequest)
+                    return
+                }
 
-            hw := &hashWriter{
-                ResponseWriter: w,
-                hasher:         NewHasher(key),
-            }
-            next.ServeHTTP(hw, r)
+                hw := &hashWriter{
+                    ResponseWriter: w,
+                    hasher:         NewHasher(key),
+                }
+                next.ServeHTTP(hw, r)
 
-            err = hw.Flush()
-            if err != nil {
-                log.Error("failed to sign body", zap.Error(err))
-                return
-            }
-        }
-
-        return http.HandlerFunc(fn)
+                err = hw.Flush()
+                if err != nil {
+                    log.Error("failed to sign body", zap.Error(err))
+                    return
+                }
+            },
+        )
     }
 }
 

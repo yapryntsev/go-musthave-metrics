@@ -228,8 +228,6 @@ func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
-
-    w.WriteHeader(http.StatusOK)
 }
 
 func (h MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
@@ -252,8 +250,6 @@ func (h MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
-
-    w.WriteHeader(http.StatusOK)
 }
 
 func (h MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, metric *models.Metrics) {
@@ -279,6 +275,4 @@ func (h MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, 
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
-
-    w.WriteHeader(http.StatusOK)
 }

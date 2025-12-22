@@ -14,18 +14,21 @@ const (
     flagStorePathDefault = "./storage"
     flagRestoreDefault   = true
     flagDsnDefault       = ""
+    flagSignKeyDefault   = ""
 
     flagAddrKey      = "a"
     flagStoreIntKey  = "i"
     flagStorePathKey = "f"
     flagRestoreKey   = "r"
     flagDsnKey       = "d"
+    flagSignKeyKey   = "k"
 
     envAddrKey      = "ADDRESS"
     envStoreIntKey  = "STORE_INTERVAL"
     envStorePathKey = "FILE_STORAGE_PATH"
     envRestoreKey   = "RESTORE"
     envDsnKey       = "DATABASE_DSN"
+    envSignKeyKey   = "KEY"
 )
 
 var (
@@ -34,6 +37,7 @@ var (
     flagStorePath string
     flagRestore   bool
     flagDsn       string
+    flagSignKey   string
 )
 
 func parseFlags(args []string, log *zap.Logger) {
@@ -44,6 +48,7 @@ func parseFlags(args []string, log *zap.Logger) {
     fs.BoolVar(&flagRestore, flagRestoreKey, flagRestoreDefault, "should restore storage state from file")
     fs.UintVar(&flagStoreInt, flagStoreIntKey, flagStoreIntDefault, "file write frequency")
     fs.StringVar(&flagDsn, flagDsnKey, flagDsnDefault, "data source name")
+    fs.StringVar(&flagSignKey, flagSignKeyKey, flagSignKeyDefault, "key used to sign request body")
 
     err := fs.Parse(args)
     if err != nil {
@@ -78,5 +83,9 @@ func parseFlags(args []string, log *zap.Logger) {
 
     if envDsn, ok := os.LookupEnv(envDsnKey); ok {
         flagDsn = envDsn
+    }
+
+    if signKey, ok := os.LookupEnv(envSignKeyKey); ok {
+        flagSignKey = signKey
     }
 }

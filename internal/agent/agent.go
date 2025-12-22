@@ -4,12 +4,18 @@ import (
     "bytes"
     "compress/gzip"
     "context"
+    "encoding/hex"
     "encoding/json"
     "errors"
     "fmt"
+    "github.com/docker/docker/pkg/meminfo"
+    "github.com/shirou/gopsutil/cpu"
+    "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
+    "golang.org/x/sync/errgroup"
     "math/rand"
     "net/http"
     "runtime"
+    "sync"
     "time"
 
     "github.com/go-resty/resty/v2"
@@ -18,19 +24,24 @@ import (
 )
 
 type Agent struct {
+    mu             sync.RWMutex
     addr           string
     stats          *runtime.MemStats
-    l              *zap.Logger
+    log            *zap.Logger
     client         *resty.Client
     reportInterval uint
     pollInterval   uint
+    signKey        string
 
     // Metrics
-    pollCount int
-    randValue float64
+    pollCount      int
+    randValue      float64
+    memTotal       int64
+    memFree        int64
+    cpuUtilization []float64
 }
 
-func New(addr string, reportInterval uint, pollInterval uint, l *zap.Logger) *Agent {
+func New(addr string, reportInterval uint, pollInterval uint, signKey string, log *zap.Logger) *Agent {
     httpClient := http.Client{
         Timeout: 5 * time.Second,
     }
@@ -46,54 +57,119 @@ func New(addr string, reportInterval uint, pollInterval uint, l *zap.Logger) *Ag
     return &Agent{
         addr:           addr,
         stats:          &runtime.MemStats{},
-        l:              l,
+        log:            log,
         client:         restyClient,
         reportInterval: reportInterval,
         pollInterval:   pollInterval,
+        signKey:        signKey,
     }
 }
 
 func (a *Agent) StartGathering(ctx context.Context) error {
-    lastReportTime := time.Now()
+    g, ctx := errgroup.WithContext(ctx)
+
+    g.Go(
+        func() error {
+            a.fetchMetrics(ctx)
+            return nil
+        },
+    )
+
+    g.Go(
+        func() error {
+            return a.fetchUtilMetrics(ctx)
+        },
+    )
+
+    g.Go(
+        func() error {
+            return a.sendMetrics(ctx)
+        },
+    )
+
+    if err := g.Wait(); err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func (a *Agent) fetchUtilMetrics(ctx context.Context) error {
+    ticker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
+
     for {
         select {
         case <-ctx.Done():
             return nil
-        default:
-            err := a.scheduleMetricsFetchAndUpload(ctx, &lastReportTime)
+        case <-ticker.C:
+            cpuUtilization, err := cpu.PercentWithContext(ctx, 0, true)
             if err != nil {
-                return err
+                return fmt.Errorf("failed to read cpu utilization info: %w", err)
+            }
+
+            info, err := meminfo.Read()
+            if err != nil {
+                return fmt.Errorf("failed to read memory info: %w", err)
+            }
+
+            a.mu.Lock()
+            a.cpuUtilization = cpuUtilization
+            a.memTotal = info.MemTotal
+            a.memFree = info.MemFree
+            a.mu.Unlock()
+        }
+    }
+}
+
+func (a *Agent) fetchMetrics(ctx context.Context) {
+    ticker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
+
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            seed := time.Now().Unix()
+            randValue := rand.New(rand.NewSource(seed)).Float64()
+
+            a.mu.Lock()
+            a.pollCount++
+            a.randValue = randValue
+
+            runtime.ReadMemStats(a.stats)
+            a.mu.Unlock()
+
+            a.log.Debug("metric collected")
+        }
+    }
+}
+
+func (a *Agent) sendMetrics(ctx context.Context) error {
+    ticker := time.NewTicker(time.Duration(a.reportInterval) * time.Second)
+
+    for {
+        select {
+        case <-ctx.Done():
+            return nil
+        case <-ticker.C:
+            batch := a.makeMetricsBatch()
+            err := a.sendBatch(ctx, batch)
+            if err != nil {
+                return fmt.Errorf("failed to send metrics batch: %w", err)
             }
         }
     }
 }
 
-func (a *Agent) scheduleMetricsFetchAndUpload(ctx context.Context, lastReportTime *time.Time) error {
-    time.Sleep(time.Duration(a.pollInterval) * time.Second)
-
-    a.pollCount++
-    seed := time.Now().Unix()
-    a.randValue = rand.New(rand.NewSource(seed)).Float64()
-
-    runtime.ReadMemStats(a.stats)
-    a.l.Debug("metric collected")
-
-    if time.Since(*lastReportTime).Seconds() < float64(a.reportInterval) {
-        return nil
-    }
-    *lastReportTime = time.Now()
-
-    err := a.sendMetrics(ctx)
-    return err
-}
-
-func (a *Agent) sendMetrics(ctx context.Context) error {
+func (a *Agent) makeMetricsBatch() []models.Metrics {
+    a.mu.RLock()
     stats := a.stats
+    a.mu.RUnlock()
 
     alloc := float64(stats.Alloc)
     bhs := float64(stats.BuckHashSys)
     frees := float64(stats.Frees)
-    gccpf := float64(stats.GCCPUFraction)
+    gccpf := stats.GCCPUFraction
     gcys := float64(stats.GCSys)
     ha := float64(stats.HeapAlloc)
     hid := float64(stats.HeapIdle)
@@ -118,6 +194,8 @@ func (a *Agent) sendMetrics(ctx context.Context) error {
     sys := float64(stats.Sys)
     ta := float64(stats.TotalAlloc)
     pc := int64(a.pollCount)
+    memTotal := float64(a.memTotal)
+    memFree := float64(a.memFree)
 
     metrics := []models.Metrics{
         {ID: "RandomValue", MType: models.Gauge, Value: &a.randValue},
@@ -149,14 +227,17 @@ func (a *Agent) sendMetrics(ctx context.Context) error {
         {ID: "Sys", MType: models.Gauge, Value: &sys},
         {ID: "TotalAlloc", MType: models.Gauge, Value: &ta},
         {ID: "PollCount", MType: models.Counter, Delta: &pc},
+        {ID: "TotalMemory", MType: models.Gauge, Value: &memTotal},
+        {ID: "FreeMemory", MType: models.Gauge, Value: &memFree},
     }
 
-    err := a.sendBatch(ctx, metrics)
-    if err != nil {
-        return fmt.Errorf("failed to send metrics batch: %w", err)
+    for i, v := range a.cpuUtilization {
+        vCopy := v
+        m := models.Metrics{ID: fmt.Sprintf("CPUutilization%d", i+1), MType: models.Gauge, Value: &vCopy}
+        metrics = append(metrics, m)
     }
 
-    return nil
+    return metrics
 }
 
 func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
@@ -166,7 +247,7 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 
     var buf bytes.Buffer
     zw := gzip.NewWriter(&buf)
-    defer zw.Close()
+    defer func() { _ = zw.Close() }()
 
     if err := json.NewEncoder(zw).Encode(metrics); err != nil {
         return err
@@ -176,21 +257,31 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
         return err
     }
 
-    resp, err := a.client.R().
+    req := a.client.R().
         SetContext(ctx).
         SetHeader("Content-Type", "application/json").
-        SetHeader("Content-Encoding", "gzip").
+        SetHeader("Content-Encoding", "gzip")
+
+    if a.signKey != "" {
+        hasher := middleware.NewHasher(a.signKey)
+        hasher.Write(buf.Bytes())
+        hashSum := hasher.Sum(nil)
+        req = req.SetHeader(middleware.SignedBodyHeader, hex.EncodeToString(hashSum))
+    }
+
+    resp, err := req.
         SetBody(buf.Bytes()).
         Post(fmt.Sprintf("http://%s/updates", a.addr))
 
     if err != nil {
-        a.l.Error("failed to send metrics", zap.Error(err))
+        a.log.Error("failed to send metrics", zap.Error(err))
+        return nil
     }
 
-    a.l.Debug("metrics sent")
+    a.log.Debug("metrics sent")
 
     if resp.StatusCode() != http.StatusOK {
-        a.l.Error("unexpected status code", zap.Int("code", resp.StatusCode()))
+        a.log.Error("unexpected status code", zap.Int("code", resp.StatusCode()))
     }
 
     return nil

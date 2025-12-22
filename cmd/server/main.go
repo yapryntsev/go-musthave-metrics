@@ -23,12 +23,12 @@ func main() {
     setupLogger()
     parseFlags(os.Args[1:], log)
 
-    ctx := context.Background()
+    ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
     db := configureDB(ctx, log)
     server := configureServer(flagAddr, db, log)
 
     serverError := make(chan error, 1)
-    stopSignal := make(chan os.Signal, 1)
 
     go func() {
         log.Debug("server is running")
@@ -37,13 +37,11 @@ func main() {
         }
     }()
 
-    signal.Notify(stopSignal, os.Interrupt, syscall.SIGTERM)
-
     select {
     case err := <-serverError:
         log.Debug("shutdown with server error", zap.Error(err))
-    case sig := <-stopSignal:
-        log.Debug(fmt.Sprintf("shutdown with os signal: %v", sig))
+    case <-ctx.Done():
+        log.Debug("shutdown with os signal")
     }
 
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -64,6 +62,8 @@ func main() {
             db.Close()
         }
     }()
+
+    defer stop()
 }
 
 func configureDB(ctx context.Context, log *zap.Logger) *pgxpool.Pool {

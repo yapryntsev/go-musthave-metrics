@@ -3,9 +3,10 @@ package main
 import (
     "flag"
     "fmt"
-    "go.uber.org/zap"
     "os"
     "strconv"
+
+    "go.uber.org/zap"
 )
 
 const (
@@ -15,6 +16,8 @@ const (
     flagRestoreDefault   = true
     flagDsnDefault       = ""
     flagSignKeyDefault   = ""
+    flagAuditFileDefault = ""
+    flagAuditURLDefault  = ""
 
     flagAddrKey      = "a"
     flagStoreIntKey  = "i"
@@ -22,6 +25,8 @@ const (
     flagRestoreKey   = "r"
     flagDsnKey       = "d"
     flagSignKeyKey   = "k"
+    flagAuditFileKey = "audit-file"
+    flagAuditURLKey  = "audit-url"
 
     envAddrKey      = "ADDRESS"
     envStoreIntKey  = "STORE_INTERVAL"
@@ -29,6 +34,8 @@ const (
     envRestoreKey   = "RESTORE"
     envDsnKey       = "DATABASE_DSN"
     envSignKeyKey   = "KEY"
+    envAuditFileKey = "AUDIT_FILE"
+    envAuditURLKey  = "AUDIT_URL"
 )
 
 var (
@@ -38,6 +45,8 @@ var (
     flagRestore   bool
     flagDsn       string
     flagSignKey   string
+    flagAuditFile string
+    flagAuditURL  string
 )
 
 func parseFlags(args []string, log *zap.Logger) {
@@ -49,6 +58,8 @@ func parseFlags(args []string, log *zap.Logger) {
     fs.UintVar(&flagStoreInt, flagStoreIntKey, flagStoreIntDefault, "file write frequency")
     fs.StringVar(&flagDsn, flagDsnKey, flagDsnDefault, "data source name")
     fs.StringVar(&flagSignKey, flagSignKeyKey, flagSignKeyDefault, "key used to sign request body")
+    fs.StringVar(&flagAuditFile, flagAuditFileKey, flagAuditFileDefault, "audit file")
+    fs.StringVar(&flagAuditURL, flagAuditURLKey, flagAuditURLDefault, "audit remote service url")
 
     err := fs.Parse(args)
     if err != nil {
@@ -87,5 +98,13 @@ func parseFlags(args []string, log *zap.Logger) {
 
     if signKey, ok := os.LookupEnv(envSignKeyKey); ok {
         flagSignKey = signKey
+    }
+
+    if auditFile, ok := os.LookupEnv(envAuditFileKey); ok {
+        flagAuditFile = auditFile
+    }
+
+    if auditURL, ok := os.LookupEnv(envAuditURLKey); ok {
+        flagAuditURL = auditURL
     }
 }

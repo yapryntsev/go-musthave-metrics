@@ -2,9 +2,10 @@ package main
 
 import (
     "fmt"
+    "testing"
+
     "github.com/stretchr/testify/require"
     "go.uber.org/zap/zaptest"
-    "testing"
 )
 
 func Test_ParseEnv(t *testing.T) {
@@ -18,6 +19,10 @@ func Test_ParseEnv(t *testing.T) {
         {envStoreIntKey, "120", uint(120), func() interface{} { return flagStoreInt }},
         {envStorePathKey, "/test", "/test", func() interface{} { return flagStorePath }},
         {envRestoreKey, "false", false, func() interface{} { return flagRestore }},
+        {envDsnKey, "postgresql://", "postgresql://", func() interface{} { return flagDsn }},
+        {envSignKeyKey, "secret", "secret", func() interface{} { return flagSignKey }},
+        {envAuditFileKey, "file.txt", "file.txt", func() interface{} { return flagAuditFile }},
+        {envAuditURLKey, "https://", "https://", func() interface{} { return flagAuditURL }},
     }
 
     // Given
@@ -49,6 +54,10 @@ func Test_ParseFlag(t *testing.T) {
         {flagStoreIntKey, "120", uint(120), func() interface{} { return flagStoreInt }},
         {flagStorePathKey, "/test", "/test", func() interface{} { return flagStorePath }},
         {flagRestoreKey, "false", false, func() interface{} { return flagRestore }},
+        {flagDsnKey, "postgresql://", "postgresql://", func() interface{} { return flagDsn }},
+        {flagSignKeyKey, "secret", "secret", func() interface{} { return flagSignKey }},
+        {flagAuditFileKey, "file.txt", "file.txt", func() interface{} { return flagAuditFile }},
+        {flagAuditURLKey, "https://", "https://", func() interface{} { return flagAuditURL }},
     }
 
     // Given
@@ -81,6 +90,10 @@ func Test_PassNoFlag_SetDefault(t *testing.T) {
         {flagStoreIntKey, flagStoreIntDefault, func() interface{} { return flagStoreInt }},
         {flagStorePathKey, flagStorePathDefault, func() interface{} { return flagStorePath }},
         {flagRestoreKey, flagRestoreDefault, func() interface{} { return flagRestore }},
+        {flagDsnKey, flagDsnDefault, func() interface{} { return flagDsn }},
+        {flagSignKeyKey, flagSignKeyDefault, func() interface{} { return flagSignKey }},
+        {flagAuditFileKey, flagAuditFileDefault, func() interface{} { return flagAuditFile }},
+        {flagAuditURLKey, flagAuditURLDefault, func() interface{} { return flagAuditURL }},
     }
 
     // When

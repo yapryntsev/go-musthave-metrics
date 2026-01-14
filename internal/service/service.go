@@ -3,11 +3,12 @@ package service
 import (
     "context"
     "errors"
+    "maps"
+    "slices"
+
     "github.com/jackc/pgx/v5/pgxpool"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
-    "maps"
-    "slices"
 )
 
 const (
@@ -88,7 +89,7 @@ func (s *Service) UpdateBatch(ctx context.Context, metrics []models.Metrics) err
     if len(metrics) == 0 {
         return nil
     }
-
+    
     batch := make(map[string]models.Metrics)
 
     for _, m := range metrics {

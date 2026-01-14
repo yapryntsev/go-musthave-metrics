@@ -5,25 +5,29 @@ import (
     "context"
     "encoding/json"
     "fmt"
-    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
-    "github.com/yapryntsev/go-musthave-metrics/internal/service"
-    "go.uber.org/zap"
     "net/http"
     "strconv"
+    "time"
+
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+    "github.com/yapryntsev/go-musthave-metrics/internal/service"
+    "github.com/yapryntsev/go-musthave-metrics/internal/service/audit"
+    "go.uber.org/zap"
 )
 
 const GetAllRowFormat = "%s: %s\n"
 
 type MetricHandler struct {
-    log     *zap.Logger
-    service service.MetricService
+    log      *zap.Logger
+    service  service.MetricService
+    auditors map[audit.AuditorID]audit.Auditor
 }
 
 func New(service service.MetricService, log *zap.Logger) MetricHandler {
-    return MetricHandler{log: log, service: service}
+    return MetricHandler{log: log, service: service, auditors: make(map[audit.AuditorID]audit.Auditor)}
 }
 
-func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+func (h *MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
@@ -53,7 +57,7 @@ func (h MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
     _, _ = w.Write(b.Bytes())
 }
 
-func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
+func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
@@ -107,7 +111,7 @@ func (h MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
+func (h *MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 
     if r.Method != http.MethodPost {
@@ -149,7 +153,7 @@ func (h MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
@@ -200,7 +204,7 @@ func (h MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
     h.updateMetric(r.Context(), w, metric)
 }
 
-func (h MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
+func (h *MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
@@ -217,7 +221,7 @@ func (h MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
     h.updateMetric(r.Context(), w, metric)
 }
 
-func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
+func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
@@ -230,29 +234,44 @@ func (h MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func (h MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
+func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
     }
 
-    var metric []models.Metrics
-    if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
+    var metrics []models.Metrics
+    if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
         h.log.Error("failed to decode request body", zap.Error(err))
 
         w.WriteHeader(http.StatusBadRequest)
         return
     }
 
-    if err := h.service.UpdateBatch(r.Context(), metric); err != nil {
+    if err := h.service.UpdateBatch(r.Context(), metrics); err != nil {
         h.log.Error("failed to save batch", zap.Error(err))
 
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
+
+    metricIDs := make([]string, len(metrics))
+    for _, metric := range metrics {
+        metricIDs = append(metricIDs, metric.ID)
+    }
+
+    auditPayload := audit.Payload{
+        Timestamp: strconv.Itoa(int(time.Now().Unix())),
+        Metrics:   metricIDs,
+        IPAddress: r.RemoteAddr,
+    }
+
+    for _, auditor := range h.auditors {
+        auditor.Process(auditPayload)
+    }
 }
 
-func (h MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, metric *models.Metrics) {
+func (h *MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, metric *models.Metrics) {
     var err error
 
     switch metric.MType {
@@ -275,4 +294,12 @@ func (h MetricHandler) updateMetric(ctx context.Context, w http.ResponseWriter, 
         w.WriteHeader(http.StatusInternalServerError)
         return
     }
+}
+
+func (h *MetricHandler) Audit(auditor audit.Auditor) {
+    h.auditors[auditor.ID()] = auditor
+}
+
+func (h *MetricHandler) Neglect(auditorID audit.AuditorID) {
+    delete(h.auditors, auditorID)
 }

@@ -3,18 +3,21 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/go-chi/chi/v5"
-    "github.com/jackc/pgx/v5/pgxpool"
-    "github.com/yapryntsev/go-musthave-metrics/internal/handler"
-    "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
-    "github.com/yapryntsev/go-musthave-metrics/internal/repository"
-    "github.com/yapryntsev/go-musthave-metrics/internal/service"
-    "go.uber.org/zap"
     "net/http"
     "os"
     "os/signal"
     "syscall"
     "time"
+
+    "github.com/go-chi/chi/v5"
+    "github.com/go-resty/resty/v2"
+    "github.com/jackc/pgx/v5/pgxpool"
+    "github.com/yapryntsev/go-musthave-metrics/internal/handler"
+    "github.com/yapryntsev/go-musthave-metrics/internal/middleware"
+    "github.com/yapryntsev/go-musthave-metrics/internal/repository"
+    "github.com/yapryntsev/go-musthave-metrics/internal/service"
+    "github.com/yapryntsev/go-musthave-metrics/internal/service/audit"
+    "go.uber.org/zap"
 )
 
 var log *zap.Logger
@@ -107,6 +110,24 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
     )
     metricService := service.New(metricRepo, db)
     metricHandler := handler.New(metricService, log)
+
+    if flagAuditFile != "" {
+        auditor, err := audit.NewLocalAuditor(flagAuditFile, log)
+        if err != nil {
+            log.Fatal("failed to initiate local auditor", zap.Error(err))
+        }
+
+        metricHandler.Audit(auditor)
+    }
+
+    if flagAuditURL != "" {
+        client := &http.Client{
+            Timeout: 5 * time.Second,
+        }
+        auditor := audit.NewRemoteAuditor(flagAuditURL, resty.NewWithClient(client), log)
+
+        metricHandler.Audit(auditor)
+    }
 
     r := chi.NewRouter()
     r.Use(middleware.Logger(log))

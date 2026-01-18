@@ -6,6 +6,11 @@ import (
     "encoding/json"
     "errors"
     "fmt"
+    "io"
+    "net/http"
+    "net/http/httptest"
+    "testing"
+
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
@@ -13,10 +18,6 @@ import (
     "github.com/yapryntsev/go-musthave-metrics/internal/service/mocks"
     "go.uber.org/mock/gomock"
     "go.uber.org/zap/zaptest"
-    "io"
-    "net/http"
-    "net/http/httptest"
-    "testing"
 )
 
 func Test_GaugeHandler_NonPostMethod_ThrowsMethodNotAllowed(t *testing.T) {
@@ -646,7 +647,7 @@ func Test_Updates_InvalidBody_Return400(t *testing.T) {
 
 func Test_Updates_ValidBody_PassBatchToService(t *testing.T) {
     // Given
-    expectedBatch := []models.Metrics{
+    expectedBatch := []*models.Metrics{
         {
             ID:    "test",
             MType: "gauge",

@@ -86,7 +86,7 @@ func (mr *MockMetricServiceMockRecorder) Ping(ctx any) *gomock.Call {
 }
 
 // UpdateBatch mocks base method.
-func (m *MockMetricService) UpdateBatch(ctx context.Context, metrics []models.Metrics) error {
+func (m *MockMetricService) UpdateBatch(ctx context.Context, metrics []*models.Metrics) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateBatch", ctx, metrics)
 	ret0, _ := ret[0].(error)

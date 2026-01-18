@@ -240,7 +240,7 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    var metrics []models.Metrics
+    var metrics []*models.Metrics
     if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
         h.log.Error("failed to decode request body", zap.Error(err))
 

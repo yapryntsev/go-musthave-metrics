@@ -86,7 +86,7 @@ func (mr *MockMetricRepositoryMockRecorder) Set(ctx, metric any) *gomock.Call {
 }
 
 // SetBatch mocks base method.
-func (m *MockMetricRepository) SetBatch(ctx context.Context, metrics []models.Metrics) error {
+func (m *MockMetricRepository) SetBatch(ctx context.Context, metrics []*models.Metrics) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetBatch", ctx, metrics)
 	ret0, _ := ret[0].(error)

@@ -3,8 +3,9 @@ package repository
 import (
     "context"
     "fmt"
-    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "time"
+
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
 )
 
 type retryableRepository struct {
@@ -74,7 +75,7 @@ func (r retryableRepository) Set(ctx context.Context, metric models.Metrics) err
     return nil
 }
 
-func (r retryableRepository) SetBatch(ctx context.Context, metrics []models.Metrics) error {
+func (r retryableRepository) SetBatch(ctx context.Context, metrics []*models.Metrics) error {
     err := performOperationWithRetry(
         func() error {
             return r.repo.SetBatch(ctx, metrics)

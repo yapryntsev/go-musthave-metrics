@@ -5,6 +5,7 @@ import (
     "database/sql"
     "errors"
     "fmt"
+
     "github.com/golang-migrate/migrate/v4"
     "github.com/golang-migrate/migrate/v4/database/postgres"
     _ "github.com/golang-migrate/migrate/v4/source/file"
@@ -132,7 +133,7 @@ func (d *DatabaseMetricRepository) Set(ctx context.Context, metric models.Metric
     return err
 }
 
-func (d *DatabaseMetricRepository) SetBatch(ctx context.Context, metrics []models.Metrics) error {
+func (d *DatabaseMetricRepository) SetBatch(ctx context.Context, metrics []*models.Metrics) error {
     tx, err := d.db.Begin(ctx)
     if err != nil {
         return fmt.Errorf("failed to create transaction: %w", err)

@@ -10,6 +10,7 @@ import (
     "time"
 
     "github.com/go-chi/chi/v5"
+    chiMv "github.com/go-chi/chi/v5/middleware"
     "github.com/go-resty/resty/v2"
     "github.com/jackc/pgx/v5/pgxpool"
     "github.com/yapryntsev/go-musthave-metrics/internal/handler"
@@ -134,6 +135,8 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
     r.Use(middleware.SignBody(flagSignKey, log))
     r.Use(middleware.Compress(log))
 
+    r.Mount("/debug", chiMv.Profiler())
+
     getValueEndpoint := fmt.Sprintf(
         `/value/{%s}/{%s}`,
         service.MetricTypePathKey,
@@ -163,11 +166,11 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
     log.Debug("handlers registered")
 
     return &http.Server{
-        Addr:         addr,
-        Handler:      r,
-        ReadTimeout:  5 * time.Second,
-        WriteTimeout: 5 * time.Second,
-        IdleTimeout:  30 * time.Second,
+        Addr:    addr,
+        Handler: r,
+        //ReadTimeout:  5 * time.Second,
+        //WriteTimeout: 5 * time.Second,
+        //IdleTimeout:  30 * time.Second,
     }
 }
 

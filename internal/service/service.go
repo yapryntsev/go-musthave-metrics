@@ -22,7 +22,7 @@ type MetricService interface {
     Get(ctx context.Context, metric *models.Metrics) (bool, error)
     UpdateCounter(ctx context.Context, mID string, value int64) error
     UpdateGauge(ctx context.Context, mID string, value float64) error
-    UpdateBatch(ctx context.Context, metrics []models.Metrics) error
+    UpdateBatch(ctx context.Context, metrics []*models.Metrics) error
     Ping(ctx context.Context) error
 }
 
@@ -66,7 +66,7 @@ func (s *Service) UpdateCounter(ctx context.Context, mID string, value int64) er
 
     *m.Delta += value
 
-    err = s.repo.Set(ctx, m)
+    err = s.repo.Set(ctx, *m)
     if err != nil {
         return err
     }
@@ -85,12 +85,12 @@ func (s *Service) UpdateGauge(ctx context.Context, mID string, value float64) er
     )
 }
 
-func (s *Service) UpdateBatch(ctx context.Context, metrics []models.Metrics) error {
+func (s *Service) UpdateBatch(ctx context.Context, metrics []*models.Metrics) error {
     if len(metrics) == 0 {
         return nil
     }
-    
-    batch := make(map[string]models.Metrics)
+
+    batch := make(map[string]*models.Metrics)
 
     for _, m := range metrics {
         switch m.MType {
@@ -124,10 +124,10 @@ func (s *Service) Ping(ctx context.Context) error {
     return s.db.Ping(ctx)
 }
 
-func (s *Service) getCurrentCounterMetric(ctx context.Context, mID string) (models.Metrics, error) {
+func (s *Service) getCurrentCounterMetric(ctx context.Context, mID string) (*models.Metrics, error) {
     m, err := s.repo.Get(ctx, mID, models.Counter)
     if err != nil {
-        return *m, err
+        return nil, err
     }
 
     if m == nil {
@@ -138,5 +138,5 @@ func (s *Service) getCurrentCounterMetric(ctx context.Context, mID string) (mode
         }
     }
 
-    return *m, nil
+    return m, nil
 }

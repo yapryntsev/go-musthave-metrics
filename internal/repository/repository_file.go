@@ -6,10 +6,11 @@ import (
     "encoding/json"
     "errors"
     "fmt"
-    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
-    "go.uber.org/zap"
     "os"
     "time"
+
+    models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+    "go.uber.org/zap"
 )
 
 type FileMetricRepository struct {
@@ -58,9 +59,9 @@ func (r *FileMetricRepository) Set(ctx context.Context, metric models.Metrics) e
     return nil
 }
 
-func (r *FileMetricRepository) SetBatch(ctx context.Context, metrics []models.Metrics) error {
+func (r *FileMetricRepository) SetBatch(ctx context.Context, metrics []*models.Metrics) error {
     for _, m := range metrics {
-        err := r.inMemory.Set(ctx, m)
+        err := r.inMemory.Set(ctx, *m)
         if err != nil {
             return err
         }

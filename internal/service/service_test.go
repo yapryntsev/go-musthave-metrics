@@ -2,13 +2,14 @@ package service
 
 import (
     "errors"
+    "testing"
+
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     models "github.com/yapryntsev/go-musthave-metrics/internal/model"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository"
     "github.com/yapryntsev/go-musthave-metrics/internal/repository/mocks"
     "go.uber.org/mock/gomock"
-    "testing"
 )
 
 func Test_UpdateCounter_SaveNewValue(t *testing.T) {
@@ -246,7 +247,7 @@ func Test_GetAll_HasStoredValue_Return(t *testing.T) {
 func Test_UpdateBatch_EmptyBatch_DoNothing(t *testing.T) {
     // Given
     ctx := t.Context()
-    var batch []models.Metrics
+    var batch []*models.Metrics
 
     ctrl := gomock.NewController(t)
     defer ctrl.Finish()
@@ -271,7 +272,7 @@ func Test_UpdateBatch_ValidBatch_PassToRepo(t *testing.T) {
 
     expectedValue := 10.0
     expectedDelta := int64(20)
-    expectedBatch := []models.Metrics{
+    expectedBatch := []*models.Metrics{
         {ID: "id-1", MType: models.Gauge, Value: new(float64)},
         {ID: "id-2", MType: models.Counter, Delta: new(int64)},
     }
@@ -305,7 +306,7 @@ func Test_UpdateBatch_BatchContainsDuplicateCounter_MergeBeforePassToRepo(t *tes
 
     expectedDelta := int64(10)
     expectedResult := int64(20)
-    expectedBatch := []models.Metrics{
+    expectedBatch := []*models.Metrics{
         {ID: "id-1", MType: models.Counter, Delta: new(int64)},
         {ID: "id-1", MType: models.Counter, Delta: new(int64)},
     }
@@ -324,13 +325,44 @@ func Test_UpdateBatch_BatchContainsDuplicateCounter_MergeBeforePassToRepo(t *tes
         Return(nil, nil)
 
     repo.EXPECT().
-        SetBatch(ctx, []models.Metrics{{ID: "id-1", MType: models.Counter, Delta: &expectedResult}})
+        SetBatch(ctx, []*models.Metrics{{ID: "id-1", MType: models.Counter, Delta: &expectedResult}})
 
     // When
     err := service.UpdateBatch(ctx, expectedBatch)
 
     // Then
     assert.NoError(t, err, "expected successful operation")
+}
+
+func BenchmarkService_UpdateBatch(b *testing.B) {
+    repo := mocks.NewMockMetricRepository(gomock.NewController(b))
+    service := makeService(repo)
+
+    repo.EXPECT().
+        Get(b.Context(), "id", models.Gauge).
+        Return(nil, nil).
+        AnyTimes()
+
+    repo.EXPECT().
+        SetBatch(b.Context(), gomock.Any()).
+        Return(nil).
+        AnyTimes()
+
+    batch := make([]*models.Metrics, 100)
+    for i := 0; i < 100; i++ {
+        delta := int64(640)
+        batch[i] = &models.Metrics{
+            ID:    "id",
+            MType: models.Gauge,
+            Delta: &delta,
+        }
+    }
+
+    b.ResetTimer()
+
+    for i := 0; i < b.N; i++ {
+        _ = service.UpdateBatch(b.Context(), batch)
+    }
 }
 
 func makeService(repo repository.MetricRepository) *Service {

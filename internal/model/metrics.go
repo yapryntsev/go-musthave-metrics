@@ -1,5 +1,6 @@
 package models
 
+// Metric types.
 const (
 	Counter = "counter"
 	Gauge   = "gauge"

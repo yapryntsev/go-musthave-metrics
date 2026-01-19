@@ -17,19 +17,28 @@ const (
 	MetricValuePathKey = `value`
 )
 
-type MetricService interface {
-	GetAll(ctx context.Context) ([]models.Metrics, error)
-	Get(ctx context.Context, metric *models.Metrics) (bool, error)
-	UpdateCounter(ctx context.Context, mID string, value int64) error
-	UpdateGauge(ctx context.Context, mID string, value float64) error
-	UpdateBatch(ctx context.Context, metrics []*models.Metrics) error
-	Ping(ctx context.Context) error
-}
+type (
+	// MetricService provides business logic.
+	MetricService interface {
+		// GetAll collects and returns all stored metrics from the repository.
+		GetAll(ctx context.Context) ([]models.Metrics, error)
+		// Get returns info about specific metric.
+		Get(ctx context.Context, metric *models.Metrics) (bool, error)
+		// UpdateCounter handles update counter metric value for provided ID.
+		UpdateCounter(ctx context.Context, mID string, value int64) error
+		// UpdateGauge handles update gauge metric value for provided ID.
+		UpdateGauge(ctx context.Context, mID string, value float64) error
+		// UpdateBatch saves provided metric collection.
+		UpdateBatch(ctx context.Context, metrics []*models.Metrics) error
+		// Ping checks whether the database connection is alive.
+		Ping(ctx context.Context) error
+	}
 
-type Service struct {
-	repo repository.MetricRepository
-	db   *pgxpool.Pool
-}
+	Service struct {
+		repo repository.MetricRepository
+		db   *pgxpool.Pool
+	}
+)
 
 func New(repo repository.MetricRepository, db *pgxpool.Pool) *Service {
 	return &Service{

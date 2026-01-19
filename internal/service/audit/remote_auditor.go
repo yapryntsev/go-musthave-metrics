@@ -15,6 +15,7 @@ type remoteAuditor struct {
 	log    *zap.Logger
 }
 
+// NewRemoteAuditor returns an Auditor instance that stores data on a remote server.
 func NewRemoteAuditor(url string, client *resty.Client, log *zap.Logger) Auditor {
 	return remoteAuditor{id: uuid.NewString(), url: url, client: client, log: log}
 }

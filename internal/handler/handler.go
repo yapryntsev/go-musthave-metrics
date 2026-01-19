@@ -1,3 +1,5 @@
+// Package handler represents the transportation layer of the app. It provides handlers that transform incoming
+//HTTP requests into specific service method calls.
 package handler
 
 import (
@@ -17,16 +19,19 @@ import (
 
 const GetAllRowFormat = "%s: %s\n"
 
+// MetricHandler provides handlers that transform incoming  HTTP requests into specific service method calls.
 type MetricHandler struct {
 	log      *zap.Logger
 	service  service.MetricService
 	auditors map[audit.AuditorID]audit.Auditor
 }
 
+// New returns MetricHandler instance.
 func New(service service.MetricService, log *zap.Logger) MetricHandler {
 	return MetricHandler{log: log, service: service, auditors: make(map[audit.AuditorID]audit.Auditor)}
 }
 
+// GetAll returns a list of all collected metrics.
 func (h *MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -57,6 +62,10 @@ func (h *MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(b.Bytes())
 }
 
+// GetValue returns the value of a specific metric identified by its ID and type.
+//
+// Deprecated: use
+//  func (h *MetricHandler) GetObject(w http.ResponseWriter, r *http.Request)
 func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -111,6 +120,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetObject returns the value of a specific metric identified by its ID and type.
 func (h *MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -153,6 +163,10 @@ func (h *MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Update saves provided metric value or updates existing one based on metric type.
+//
+// Deprecated: use
+//  func (h *MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request)
 func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -204,6 +218,7 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	h.updateMetric(r.Context(), w, metric)
 }
 
+// UpdateObject saves provided metric value or updates existing one based on metric type.
 func (h *MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -234,6 +249,7 @@ func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateBatch saves the provided metric values or updates existing ones based on their type.
 func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

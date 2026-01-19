@@ -1,3 +1,4 @@
+// Package agent provides an implementation of a client for gathering and sending performance metrics to the server.
 package agent
 
 import (
@@ -24,6 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Agent handles metric collections and sending them to the server.
 type Agent struct {
 	mu             sync.RWMutex
 	addr           string
@@ -42,6 +44,7 @@ type Agent struct {
 	cpuUtilization []float64
 }
 
+// New creates a new instance of the Agent.
 func New(addr string, reportInterval uint, pollInterval uint, signKey string, log *zap.Logger) *Agent {
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
@@ -66,6 +69,10 @@ func New(addr string, reportInterval uint, pollInterval uint, signKey string, lo
 	}
 }
 
+// StartGathering launches a gathering loop that collects and sends metrics based on the reportInterval and pollInterval
+// flags.
+//
+// In order to stop the loop, cancel the context.
 func (a *Agent) StartGathering(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -95,6 +102,9 @@ func (a *Agent) StartGathering(ctx context.Context) error {
 	return nil
 }
 
+// fetchUtilMetrics collects CPU utilization metrics.
+//
+// Frequency of metric collection is configured by the pollInterval flag.
 func (a *Agent) fetchUtilMetrics(ctx context.Context) error {
 	ticker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
 
@@ -122,6 +132,9 @@ func (a *Agent) fetchUtilMetrics(ctx context.Context) error {
 	}
 }
 
+// fetchMetrics collects memory allocation statistics.
+//
+// Frequency of statistic collection is configured by the pollInterval flag.
 func (a *Agent) fetchMetrics(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
 
@@ -145,6 +158,9 @@ func (a *Agent) fetchMetrics(ctx context.Context) {
 	}
 }
 
+// sendMetrics repeatedly sends collected metrics to the server.
+//
+// Send frequency is configured by the reportInterval flag.
 func (a *Agent) sendMetrics(ctx context.Context) error {
 	ticker := time.NewTicker(time.Duration(a.reportInterval) * time.Second)
 
@@ -162,6 +178,7 @@ func (a *Agent) sendMetrics(ctx context.Context) error {
 	}
 }
 
+// makeMetricsBatch prepare collected metrics for sending to the server.
 func (a *Agent) makeMetricsBatch() []models.Metrics {
 	a.mu.RLock()
 	stats := a.stats
@@ -241,6 +258,7 @@ func (a *Agent) makeMetricsBatch() []models.Metrics {
 	return metrics
 }
 
+// sendBatch executes an HTTP request that delivers a metrics batch to the server.
 func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 	if len(a.addr) == 0 {
 		return errors.New("host must be configured")

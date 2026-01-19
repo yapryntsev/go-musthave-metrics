@@ -15,6 +15,7 @@ type localAuditor struct {
 	log  *zap.Logger
 }
 
+// NewLocalAuditor returns an Auditor instance that stores information in a local file.
 func NewLocalAuditor(fileName string, log *zap.Logger) (Auditor, error) {
 	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {

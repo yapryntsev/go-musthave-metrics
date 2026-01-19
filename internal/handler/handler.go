@@ -63,9 +63,6 @@ func (h *MetricHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetValue returns the value of a specific metric identified by its ID and type.
-//
-// Deprecated: use
-//  func (h *MetricHandler) GetObject(w http.ResponseWriter, r *http.Request)
 func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -164,9 +161,6 @@ func (h *MetricHandler) GetObject(w http.ResponseWriter, r *http.Request) {
 }
 
 // Update saves provided metric value or updates existing one based on metric type.
-//
-// Deprecated: use
-//  func (h *MetricHandler) UpdateObject(w http.ResponseWriter, r *http.Request)
 func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

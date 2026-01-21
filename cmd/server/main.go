@@ -122,10 +122,18 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
 	}
 
 	if flagAuditURL != "" {
-		client := &http.Client{
+		httpClient := &http.Client{
 			Timeout: 5 * time.Second,
 		}
-		auditor := audit.NewRemoteAuditor(flagAuditURL, resty.NewWithClient(client), log)
+		restyClient := resty.NewWithClient(httpClient).
+			SetRetryCount(3).
+			SetRetryAfter(
+				func(client *resty.Client, response *resty.Response) (time.Duration, error) {
+					a := response.Request.Attempt - 1
+					return time.Duration(1+2*a) * time.Second, nil
+				},
+			)
+		auditor := audit.NewRemoteAuditor(flagAuditURL, restyClient, log)
 
 		metricHandler.Audit(auditor)
 	}
@@ -166,11 +174,11 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
 	log.Debug("handlers registered")
 
 	return &http.Server{
-		Addr:    addr,
-		Handler: r,
-		//ReadTimeout:  5 * time.Second,
-		//WriteTimeout: 5 * time.Second,
-		//IdleTimeout:  30 * time.Second,
+		Addr:         addr,
+		Handler:      r,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		IdleTimeout:  30 * time.Second,
 	}
 }
 

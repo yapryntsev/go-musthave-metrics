@@ -33,6 +33,11 @@ func (l remoteAuditor) Process(payload Payload) {
 		l.log.Error("failed to send metrics", zap.Error(err))
 	}
 
+	if resp == nil {
+		l.log.Error("failed to get response")
+		return
+	}
+
 	if resp.StatusCode() != http.StatusOK {
 		l.log.Error("unexpected status code", zap.Int("code", resp.StatusCode()))
 	}

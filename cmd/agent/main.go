@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/yapryntsev/go-musthave-metrics/internal/agent"
 	"go.uber.org/zap"
@@ -14,14 +14,14 @@ import (
 func main() {
 	l, err := zap.NewDevelopment()
 	if err != nil {
-		panic(fmt.Errorf("failed to initiate logger: %w", err))
+		log.Fatal(fmt.Errorf("failed to initiate logger: %w", err))
 	}
 
 	parseFlags(os.Args[1:], l)
 	stopSignal := make(chan struct{}, 1)
 
 	appAgent := configureAgent(l)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	go func() {
 		l.Debug("agent is running")
@@ -32,12 +32,9 @@ func main() {
 	}()
 
 	go func() {
-		ch := make(chan os.Signal, 1)
+		<-ctx.Done()
 
-		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
-		sig := <-ch
-
-		l.Debug("shutting down with os signal", zap.String("signal", sig.String()))
+		l.Debug("shutting down with os signal")
 		stopSignal <- struct{}{}
 	}()
 

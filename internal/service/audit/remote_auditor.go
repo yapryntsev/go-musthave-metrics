@@ -31,10 +31,6 @@ func (l remoteAuditor) Process(payload Payload) {
 
 	if err != nil {
 		l.log.Error("failed to send metrics", zap.Error(err))
-	}
-
-	if resp == nil {
-		l.log.Error("failed to get response")
 		return
 	}
 

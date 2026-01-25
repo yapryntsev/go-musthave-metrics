@@ -42,3 +42,16 @@ git fetch template && git checkout template/v2 .github
 - **Clean Architecture**
 - **Hexagonal Architecture**
 - **Layered Architecture**
+
+## Результаты профилирования
+
+Showing nodes accounting for -2MB, 66.65% of 3MB total
+
+| flat | flat% | sum% |
+| --- | --- | --- |
+| -2MB | 66.65% | 66.65% |    
+
+-2MB 66.65%  [server]
+
+При формировании батча для отправки в репозиторий все метрики передаются как указатель, что позволяет избежать 
+доп. аллокаций.

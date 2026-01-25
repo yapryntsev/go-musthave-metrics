@@ -1,0 +1,613 @@
+heap profile: 2: 4096 [162: 64891448] @ heap/1048576
+0: 0 [0: 0] @ 0x104de40ac 0x104de4085 0x104de73b0 0x104e23824 0x104f37054 0x104f36804 0x104f35990 0x104f3b4dc 0x104f408ec 0x104f522dc 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104de40ab	github.com/jackc/pgx/v5/pgproto3.beginMessage+0x4b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/pgproto3.go:105
+#	0x104de4084	github.com/jackc/pgx/v5/pgproto3.(*Describe).Encode+0x24							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/describe.go:39
+#	0x104de73af	github.com/jackc/pgx/v5/pgproto3.(*Frontend).SendDescribe+0x3f							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/frontend.go:205
+#	0x104e23823	github.com/jackc/pgx/v5/pgconn.(*Pipeline).SendQueryPrepared+0xb3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2231
+#	0x104f37053	github.com/jackc/pgx/v5.(*Conn).sendBatchExtendedWithDescription+0x1f3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1208
+#	0x104f36803	github.com/jackc/pgx/v5.(*Conn).sendBatchQueryExecModeCacheStatement+0x383					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1070
+#	0x104f3598f	github.com/jackc/pgx/v5.(*Conn).SendBatch+0x36f									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:975
+#	0x104f3b4db	github.com/jackc/pgx/v5.(*dbTx).SendBatch+0x7b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/tx.go:275
+#	0x104f408eb	github.com/jackc/pgx/v5/pgxpool.(*Tx).SendBatch+0x2b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/tx.go:51
+#	0x104f522db	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x37b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:169
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 2048] @ 0x104d5521c 0x104d551f5 0x104d35a90 0x104d39544 0x104b5d5d4
+#	0x104d5521b	bufio.NewWriterSize+0x19b		/opt/homebrew/opt/go/libexec/src/bufio/bufio.go:602
+#	0x104d551f4	net/http.newBufioWriterSize+0x174	/opt/homebrew/opt/go/libexec/src/net/http/server.go:909
+#	0x104d35a8f	net/http.(*conn).readRequest+0x72f	/opt/homebrew/opt/go/libexec/src/net/http/server.go:1107
+#	0x104d39543	net/http.(*conn).serve+0x313		/opt/homebrew/opt/go/libexec/src/net/http/server.go:2031
+
+0: 0 [1: 3072] @ 0x104ddffe4 0x104de6c20 0x104e237fc 0x104f37054 0x104f36804 0x104f35990 0x104f3b4dc 0x104f408ec 0x104f522dc 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104ddffe3	github.com/jackc/pgx/v5/pgproto3.(*Bind).Encode+0x1b3								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/bind.go:118
+#	0x104de6c1f	github.com/jackc/pgx/v5/pgproto3.(*Frontend).SendBind+0x3f							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/frontend.go:145
+#	0x104e237fb	github.com/jackc/pgx/v5/pgconn.(*Pipeline).SendQueryPrepared+0x8b						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2230
+#	0x104f37053	github.com/jackc/pgx/v5.(*Conn).sendBatchExtendedWithDescription+0x1f3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1208
+#	0x104f36803	github.com/jackc/pgx/v5.(*Conn).sendBatchQueryExecModeCacheStatement+0x383					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1070
+#	0x104f3598f	github.com/jackc/pgx/v5.(*Conn).SendBatch+0x36f									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:975
+#	0x104f3b4db	github.com/jackc/pgx/v5.(*dbTx).SendBatch+0x7b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/tx.go:275
+#	0x104f408eb	github.com/jackc/pgx/v5/pgxpool.(*Tx).SendBatch+0x2b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/tx.go:51
+#	0x104f522db	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x37b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:169
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 1792] @ 0x104b70158 0x104b6ff7c 0x104b6fc30 0x104d8c3cc 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104b70157	sync.(*Pool).pinSlow+0x197			/opt/homebrew/opt/go/libexec/src/sync/pool.go:241
+#	0x104b6ff7b	sync.(*Pool).pin+0x5b				/opt/homebrew/opt/go/libexec/src/sync/pool.go:220
+#	0x104b6fc2f	sync.(*Pool).Put+0x2f				/opt/homebrew/opt/go/libexec/src/sync/pool.go:111
+#	0x104d8c3cb	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x26b	/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:91
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf		/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 1792] @ 0x104b70158 0x104b6ff7c 0x104b6fce0 0x104bf0338 0x104bf0325 0x104bf0331 0x104bf12a4 0x104bf3364 0x104d6701c 0x104f5ca2c 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104b70157	sync.(*Pool).pinSlow+0x197				/opt/homebrew/opt/go/libexec/src/sync/pool.go:241
+#	0x104b6ff7b	sync.(*Pool).pin+0x5b					/opt/homebrew/opt/go/libexec/src/sync/pool.go:220
+#	0x104b6fcdf	sync.(*Pool).Get+0x1f					/opt/homebrew/opt/go/libexec/src/sync/pool.go:135
+#	0x104bf0337	go.uber.org/zap/internal/pool.(*Pool[...]).Get+0x57	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/internal/pool/pool.go:52
+#	0x104bf0324	go.uber.org/zap/zapcore.getSliceEncoder+0x44		/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/zapcore/console_encoder.go:38
+#	0x104bf0330	go.uber.org/zap/zapcore.consoleEncoder.EncodeEntry+0x50	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/zapcore/console_encoder.go:79
+#	0x104bf12a3	go.uber.org/zap/zapcore.(*ioCore).Write+0x53		/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/zapcore/core.go:95
+#	0x104bf3363	go.uber.org/zap/zapcore.(*CheckedEntry).Write+0xd3	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/zapcore/entry.go:253
+#	0x104d6701b	go.uber.org/zap.(*Logger).Debug+0x4b			/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/logger.go:239
+#	0x104f5ca2b	main.configureServer.Logger.func1.1+0x40b		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:30
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf			/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527				/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [3: 1990656] @ 0x104ce5570 0x104ce5551 0x104f58c7c 0x104db7b7c 0x104db77b8 0x104d3af18 0x104d8d53c 0x104d3af18 0x104dbb73c 0x104d3af18 0x104d8c3f4 0x104d8d014 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104ce556f	compress/flate.NewWriter+0x23f									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:663
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104f58c7b	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Write+0xeb	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:93
+#	0x104db7b7b	net/http/pprof.indexTmplExecute+0x2ab								/opt/homebrew/opt/go/libexec/src/net/http/pprof/pprof.go:467
+#	0x104db77b7	net/http/pprof.Index+0x527									/opt/homebrew/opt/go/libexec/src/net/http/pprof/pprof.go:420
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104dbb73b	github.com/go-chi/chi/v5/middleware.NoCache.func1+0x1fb						/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/middleware/nocache.go:55
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3f3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x293							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:73
+#	0x104d8d013	github.com/go-chi/chi/v5.(*Mux).Mount.func1+0x1c3						/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:321
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 65536] @ 0x104cdbf44 0x104cdbf2d 0x104ce5584 0x104ce5551 0x104f58c7c 0x104f568bc 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104cdbf43	compress/flate.(*compressor).initDeflate+0x413							/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:370
+#	0x104cdbf2c	compress/flate.(*compressor).init+0x3fc								/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:593
+#	0x104ce5583	compress/flate.NewWriter+0x253									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:664
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104f58c7b	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Write+0xeb	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:93
+#	0x104f568bb	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).GetAll+0x45b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:57
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 663552] @ 0x104ce5570 0x104ce5551 0x104f58c7c 0x104f568bc 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104ce556f	compress/flate.NewWriter+0x23f									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:663
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104f58c7b	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Write+0xeb	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:93
+#	0x104f568bb	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).GetAll+0x45b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:57
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 16] @ 0x104b7f830 0x104b8ae5c 0x104e67e28 0x104e67e11 0x104e6c72c 0x104f3849c 0x104f38260 0x104f381e4 0x104f37f28 0x104f36ff0 0x104f36804 0x104f35990 0x104f3b4dc 0x104f408ec 0x104f522dc 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104b7f82f	reflect.packEface+0x3f												/opt/homebrew/opt/go/libexec/src/reflect/value.go:135
+#	0x104b8ae5b	reflect.valueInterface+0x9b											/opt/homebrew/opt/go/libexec/src/reflect/value.go:1495
+#	0x104e67e27	reflect.Value.Interface+0x107											/opt/homebrew/opt/go/libexec/src/reflect/value.go:1473
+#	0x104e67e10	github.com/jackc/pgx/v5/pgtype.(*derefPointerEncodePlan).Encode+0xf0						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgtype/pgtype.go:1349
+#	0x104e6c72b	github.com/jackc/pgx/v5/pgtype.(*Map).Encode+0x13b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgtype/pgtype.go:1961
+#	0x104f3849b	github.com/jackc/pgx/v5.(*ExtendedQueryBuilder).encodeExtendedParamValue+0xbb					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/extended_query_builder.go:125
+#	0x104f3825f	github.com/jackc/pgx/v5.(*ExtendedQueryBuilder).appendParam+0x17f						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/extended_query_builder.go:79
+#	0x104f381e3	github.com/jackc/pgx/v5.(*ExtendedQueryBuilder).appendParam+0x103						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/extended_query_builder.go:59
+#	0x104f37f27	github.com/jackc/pgx/v5.(*ExtendedQueryBuilder).Build+0x307							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/extended_query_builder.go:40
+#	0x104f36fef	github.com/jackc/pgx/v5.(*Conn).sendBatchExtendedWithDescription+0x18f						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1198
+#	0x104f36803	github.com/jackc/pgx/v5.(*Conn).sendBatchQueryExecModeCacheStatement+0x383					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1070
+#	0x104f3598f	github.com/jackc/pgx/v5.(*Conn).SendBatch+0x36f									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:975
+#	0x104f3b4db	github.com/jackc/pgx/v5.(*dbTx).SendBatch+0x7b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/tx.go:275
+#	0x104f408eb	github.com/jackc/pgx/v5/pgxpool.(*Tx).SendBatch+0x2b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/tx.go:51
+#	0x104f522db	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x37b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:169
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 2304] @ 0x104de0394 0x104de6c20 0x104e237fc 0x104f37054 0x104f36804 0x104f35990 0x104f3b4dc 0x104f408ec 0x104f522dc 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104de0393	github.com/jackc/pgx/v5/pgproto3.(*Bind).Encode+0x563								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/bind.go:140
+#	0x104de6c1f	github.com/jackc/pgx/v5/pgproto3.(*Frontend).SendBind+0x3f							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/frontend.go:145
+#	0x104e237fb	github.com/jackc/pgx/v5/pgconn.(*Pipeline).SendQueryPrepared+0x8b						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2230
+#	0x104f37053	github.com/jackc/pgx/v5.(*Conn).sendBatchExtendedWithDescription+0x1f3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1208
+#	0x104f36803	github.com/jackc/pgx/v5.(*Conn).sendBatchQueryExecModeCacheStatement+0x383					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1070
+#	0x104f3598f	github.com/jackc/pgx/v5.(*Conn).SendBatch+0x36f									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:975
+#	0x104f3b4db	github.com/jackc/pgx/v5.(*dbTx).SendBatch+0x7b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/tx.go:275
+#	0x104f408eb	github.com/jackc/pgx/v5/pgxpool.(*Tx).SendBatch+0x2b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/tx.go:51
+#	0x104f522db	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x37b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:169
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [2: 2816] @ 0x104f584dc 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104f584db	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x3ab	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:260
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 131072] @ 0x104b304e4 0x104aed4ec 0x104da4930 0x104db5cdc 0x104d3af18 0x104d8d53c 0x104d3af18 0x104dbb73c 0x104d3af18 0x104d8c3f4 0x104d8d014 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104da492f	runtime/pprof.StartCPUProfile+0x12f			/opt/homebrew/opt/go/libexec/src/runtime/pprof/pprof.go:847
+#	0x104db5cdb	net/http/pprof.Profile+0x25b				/opt/homebrew/opt/go/libexec/src/net/http/pprof/pprof.go:157
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104dbb73b	github.com/go-chi/chi/v5/middleware.NoCache.func1+0x1fb	/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/middleware/nocache.go:55
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3f3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x293		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:73
+#	0x104d8d013	github.com/go-chi/chi/v5.(*Mux).Mount.func1+0x1c3	/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:321
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf			/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527				/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 1048576] @ 0x104b304a8 0x104aed4ec 0x104da4930 0x104db5cdc 0x104d3af18 0x104d8d53c 0x104d3af18 0x104dbb73c 0x104d3af18 0x104d8c3f4 0x104d8d014 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104da492f	runtime/pprof.StartCPUProfile+0x12f			/opt/homebrew/opt/go/libexec/src/runtime/pprof/pprof.go:847
+#	0x104db5cdb	net/http/pprof.Profile+0x25b				/opt/homebrew/opt/go/libexec/src/net/http/pprof/pprof.go:157
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104dbb73b	github.com/go-chi/chi/v5/middleware.NoCache.func1+0x1fb	/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/middleware/nocache.go:55
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3f3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x293		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:73
+#	0x104d8d013	github.com/go-chi/chi/v5.(*Mux).Mount.func1+0x1c3	/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:321
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf			/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527				/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [2: 32] @ 0x104e22cd8 0x104e23854 0x104f37054 0x104f36804 0x104f35990 0x104f3b4dc 0x104f408ec 0x104f522dc 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104e22cd7	github.com/jackc/pgx/v5/pgconn.(*pipelineState).PushBackRequestType+0x47					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2092
+#	0x104e23853	github.com/jackc/pgx/v5/pgconn.(*Pipeline).SendQueryPrepared+0xe3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2233
+#	0x104f37053	github.com/jackc/pgx/v5.(*Conn).sendBatchExtendedWithDescription+0x1f3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1208
+#	0x104f36803	github.com/jackc/pgx/v5.(*Conn).sendBatchQueryExecModeCacheStatement+0x383					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1070
+#	0x104f3598f	github.com/jackc/pgx/v5.(*Conn).SendBatch+0x36f									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:975
+#	0x104f3b4db	github.com/jackc/pgx/v5.(*dbTx).SendBatch+0x7b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/tx.go:275
+#	0x104f408eb	github.com/jackc/pgx/v5/pgxpool.(*Tx).SendBatch+0x2b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/tx.go:51
+#	0x104f522db	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x37b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:169
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 2304] @ 0x104de40fc 0x104de40d5 0x104de40d1 0x104de4085 0x104de73b0 0x104e23824 0x104f37054 0x104f36804 0x104f35990 0x104f3b4dc 0x104f408ec 0x104f522dc 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104de40fb	github.com/jackc/pgx/v5/internal/pgio.AppendUint32+0x9b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/internal/pgio/write.go:14
+#	0x104de40d4	github.com/jackc/pgx/v5/internal/pgio.AppendInt32+0x74								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/internal/pgio/write.go:31
+#	0x104de40d0	github.com/jackc/pgx/v5/pgproto3.beginMessage+0x70								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/pgproto3.go:107
+#	0x104de4084	github.com/jackc/pgx/v5/pgproto3.(*Describe).Encode+0x24							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/describe.go:39
+#	0x104de73af	github.com/jackc/pgx/v5/pgproto3.(*Frontend).SendDescribe+0x3f							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/frontend.go:205
+#	0x104e23823	github.com/jackc/pgx/v5/pgconn.(*Pipeline).SendQueryPrepared+0xb3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2231
+#	0x104f37053	github.com/jackc/pgx/v5.(*Conn).sendBatchExtendedWithDescription+0x1f3						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1208
+#	0x104f36803	github.com/jackc/pgx/v5.(*Conn).sendBatchQueryExecModeCacheStatement+0x383					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1070
+#	0x104f3598f	github.com/jackc/pgx/v5.(*Conn).SendBatch+0x36f									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:975
+#	0x104f3b4db	github.com/jackc/pgx/v5.(*dbTx).SendBatch+0x7b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/tx.go:275
+#	0x104f408eb	github.com/jackc/pgx/v5/pgxpool.(*Tx).SendBatch+0x2b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/tx.go:51
+#	0x104f522db	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x37b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:169
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 128] @ 0x104cdbc64 0x104cdbc4d 0x104cdbd41 0x104ce5584 0x104ce5551 0x104ce580c 0x104f58cd0 0x104f5c1f0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104cdbc63	compress/flate.newHuffmanEncoder+0x133								/opt/homebrew/opt/go/libexec/src/compress/flate/huffman_code.go:60
+#	0x104cdbc4c	compress/flate.newHuffmanBitWriter+0x11c							/opt/homebrew/opt/go/libexec/src/compress/flate/huffman_bit_writer.go:102
+#	0x104cdbd40	compress/flate.(*compressor).init+0x210								/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:570
+#	0x104ce5583	compress/flate.NewWriter+0x253									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:664
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104ce580b	compress/gzip.(*Writer).Close+0x4b								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:237
+#	0x104f58ccf	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Close+0x1f	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:97
+#	0x104f5c1ef	main.configureServer.Compress.func2.1+0x13f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:45
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 1792] @ 0x104b70158 0x104b6ff7c 0x104b6fce0 0x104c04ad0 0x104c04ac1 0x104d676ac 0x104d67008 0x104f5ca2c 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104b70157	sync.(*Pool).pinSlow+0x197				/opt/homebrew/opt/go/libexec/src/sync/pool.go:241
+#	0x104b6ff7b	sync.(*Pool).pin+0x5b					/opt/homebrew/opt/go/libexec/src/sync/pool.go:220
+#	0x104b6fcdf	sync.(*Pool).Get+0x1f					/opt/homebrew/opt/go/libexec/src/sync/pool.go:135
+#	0x104c04acf	go.uber.org/zap/internal/pool.(*Pool[...]).Get+0x2f	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/internal/pool/pool.go:52
+#	0x104c04ac0	go.uber.org/zap/internal/stacktrace.Capture+0x20	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/internal/stacktrace/stack.go:72
+#	0x104d676ab	go.uber.org/zap.(*Logger).check+0x4fb			/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/logger.go:379
+#	0x104d67007	go.uber.org/zap.(*Logger).Debug+0x37			/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/logger.go:238
+#	0x104f5ca2b	main.configureServer.Logger.func1.1+0x40b		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:30
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf			/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527				/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 64] @ 0x104f521fc 0x104f52115 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104f521fb	github.com/jackc/pgx/v5.(*Batch).Queue+0x29b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/batch.go:75
+#	0x104f52114	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x1b4	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:160
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 4096] @ 0x104ce3d7c 0x104ce3d25 0x104ce3e01 0x104ce3bec 0x104f5c2d8 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104ce3d7b	bufio.NewReaderSize+0x13b			/opt/homebrew/opt/go/libexec/src/bufio/bufio.go:57
+#	0x104ce3d24	bufio.NewReader+0xe4				/opt/homebrew/opt/go/libexec/src/bufio/bufio.go:63
+#	0x104ce3e00	compress/gzip.(*Reader).Reset+0x1c0		/opt/homebrew/opt/go/libexec/src/compress/gzip/gunzip.go:111
+#	0x104ce3beb	compress/gzip.NewReader+0x3b			/opt/homebrew/opt/go/libexec/src/compress/gzip/gunzip.go:94
+#	0x104f5c2d7	main.configureServer.Compress.func2.1+0x227	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:16
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37		/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37		/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253	/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf		/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 4096] @ 0x104be6160 0x104be5e40 0x104be5c2c 0x104f5822c 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104be615f	encoding/json.(*Decoder).refill+0xbf								/opt/homebrew/opt/go/libexec/src/encoding/json/stream.go:161
+#	0x104be5e3f	encoding/json.(*Decoder).readValue+0x6f								/opt/homebrew/opt/go/libexec/src/encoding/json/stream.go:142
+#	0x104be5c2b	encoding/json.(*Decoder).Decode+0x5b								/opt/homebrew/opt/go/libexec/src/encoding/json/stream.go:65
+#	0x104f5822b	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0xfb	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:244
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 65536] @ 0x104cdbe20 0x104cdbe59 0x104ce5584 0x104ce5551 0x104da7d84 0x104da4bbc 0x104b5d5d4
+#	0x104cdbe1f	compress/flate.newDeflateFast+0x2ef		/opt/homebrew/opt/go/libexec/src/compress/flate/deflatefast.go:64
+#	0x104cdbe58	compress/flate.(*compressor).init+0x328		/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:586
+#	0x104ce5583	compress/flate.NewWriter+0x253			/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:664
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220		/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104da7d83	runtime/pprof.(*profileBuilder).build+0x413	/opt/homebrew/opt/go/libexec/src/runtime/pprof/proto.go:390
+#	0x104da4bbb	runtime/pprof.profileWriter+0xab		/opt/homebrew/opt/go/libexec/src/runtime/pprof/pprof.go:877
+
+0: 0 [1: 663552] @ 0x104ce5570 0x104ce5551 0x104f58c7c 0x104ce5474 0x104da7d84 0x104da4bbc 0x104b5d5d4
+#	0x104ce556f	compress/flate.NewWriter+0x23f									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:663
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104f58c7b	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Write+0xeb	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:93
+#	0x104ce5473	compress/gzip.(*Writer).Write+0x143								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:168
+#	0x104da7d83	runtime/pprof.(*profileBuilder).build+0x413							/opt/homebrew/opt/go/libexec/src/runtime/pprof/proto.go:390
+#	0x104da4bbb	runtime/pprof.profileWriter+0xab								/opt/homebrew/opt/go/libexec/src/runtime/pprof/pprof.go:877
+
+0: 0 [1: 2688] @ 0x104f3e03c 0x104f422d8 0x104b5d5d4
+#	0x104f3e03b	github.com/jackc/pgx/v5/pgxpool.NewWithConfig.func3+0x25b		/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/pool.go:300
+#	0x104f422d7	github.com/jackc/puddle/v2.(*Pool[...]).initResourceValue.func1+0xb7	/Users/ya/go/pkg/mod/github.com/jackc/puddle/v2@v2.2.2/pool.go:423
+
+0: 0 [1: 1024] @ 0x104de6b08 0x104e22bc8 0x104e23984 0x104e23b68 0x104f3713c 0x104f36804 0x104f35990 0x104f3b4dc 0x104f408ec 0x104f522dc 0x104f53bc0 0x104f53c0c 0x104f53b0c 0x104f549a0 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104de6b07	github.com/jackc/pgx/v5/pgproto3.(*Frontend).Flush+0xf7								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgproto3/frontend.go:110
+#	0x104e22bc7	github.com/jackc/pgx/v5/pgconn.(*PgConn).flushWithPotentialWriteReadDeadlock+0x67				/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:1898
+#	0x104e23983	github.com/jackc/pgx/v5/pgconn.(*Pipeline).Flush+0x73								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2276
+#	0x104e23b67	github.com/jackc/pgx/v5/pgconn.(*Pipeline).Sync+0x27								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:2296
+#	0x104f3713b	github.com/jackc/pgx/v5.(*Conn).sendBatchExtendedWithDescription+0x2db						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1212
+#	0x104f36803	github.com/jackc/pgx/v5.(*Conn).sendBatchQueryExecModeCacheStatement+0x383					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:1070
+#	0x104f3598f	github.com/jackc/pgx/v5.(*Conn).SendBatch+0x36f									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:975
+#	0x104f3b4db	github.com/jackc/pgx/v5.(*dbTx).SendBatch+0x7b									/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/tx.go:275
+#	0x104f408eb	github.com/jackc/pgx/v5/pgxpool.(*Tx).SendBatch+0x2b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/tx.go:51
+#	0x104f522db	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).SetBatch+0x37b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:169
+#	0x104f53bbf	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch.func1+0x2f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:81
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f53b0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.SetBatch+0x6b			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:79
+#	0x104f5499f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x36f				/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:116
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb									/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253									/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf										/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527											/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 8192] @ 0x104da0f2c 0x104da7784 0x104da4b88 0x104b5d5d4
+#	0x104da0f2b	runtime/pprof.(*profMap).lookup+0xdb			/opt/homebrew/opt/go/libexec/src/runtime/pprof/map.go:61
+#	0x104da7783	runtime/pprof.(*profileBuilder).addCPUData+0x113	/opt/homebrew/opt/go/libexec/src/runtime/pprof/proto.go:338
+#	0x104da4b87	runtime/pprof.profileWriter+0x77			/opt/homebrew/opt/go/libexec/src/runtime/pprof/pprof.go:865
+
+0: 0 [1: 24] @ 0x104b3c42d 0x104b3bc60 0x104b3bda0 0x104f54728 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104f54727	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0xf7		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:98
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [10: 327680] @ 0x104ce26f4 0x104ce25dd 0x104ce44c0 0x104ce3e30 0x104ce3bec 0x104f5c2d8 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104ce26f3	compress/flate.(*dictDecoder).init+0x163	/opt/homebrew/opt/go/libexec/src/compress/flate/dict_decoder.go:43
+#	0x104ce25dc	compress/flate.NewReader+0x4c			/opt/homebrew/opt/go/libexec/src/compress/flate/inflate.go:815
+#	0x104ce44bf	compress/gzip.(*Reader).readHeader+0x33f	/opt/homebrew/opt/go/libexec/src/compress/gzip/gunzip.go:238
+#	0x104ce3e2f	compress/gzip.(*Reader).Reset+0x1ef		/opt/homebrew/opt/go/libexec/src/compress/gzip/gunzip.go:113
+#	0x104ce3beb	compress/gzip.NewReader+0x3b			/opt/homebrew/opt/go/libexec/src/compress/gzip/gunzip.go:94
+#	0x104f5c2d7	main.configureServer.Compress.func2.1+0x227	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:16
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37		/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37		/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253	/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf		/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [15: 983040] @ 0x104cdbf44 0x104cdbf2d 0x104ce5584 0x104ce5551 0x104ce580c 0x104f58cd0 0x104f5c1f0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104cdbf43	compress/flate.(*compressor).initDeflate+0x413							/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:370
+#	0x104cdbf2c	compress/flate.(*compressor).init+0x3fc								/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:593
+#	0x104ce5583	compress/flate.NewWriter+0x253									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:664
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104ce580b	compress/gzip.(*Writer).Close+0x4b								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:237
+#	0x104f58ccf	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Close+0x1f	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:97
+#	0x104f5c1ef	main.configureServer.Compress.func2.1+0x13f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:45
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 32] @ 0x104b700d4 0x104b6ff7c 0x104b6fce0 0x104bd4d58 0x104bd4d51 0x104bf0320 0x104bf12a4 0x104bf3364 0x104d6701c 0x104f5ca2c 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104b700d3	sync.(*Pool).pinSlow+0x113				/opt/homebrew/opt/go/libexec/src/sync/pool.go:237
+#	0x104b6ff7b	sync.(*Pool).pin+0x5b					/opt/homebrew/opt/go/libexec/src/sync/pool.go:220
+#	0x104b6fcdf	sync.(*Pool).Get+0x1f					/opt/homebrew/opt/go/libexec/src/sync/pool.go:135
+#	0x104bd4d57	go.uber.org/zap/internal/pool.(*Pool[...]).Get+0x27	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/internal/pool/pool.go:52
+#	0x104bd4d50	go.uber.org/zap/buffer.Pool.Get+0x20			/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/buffer/pool.go:45
+#	0x104bf031f	go.uber.org/zap/zapcore.consoleEncoder.EncodeEntry+0x3f	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/zapcore/console_encoder.go:71
+#	0x104bf12a3	go.uber.org/zap/zapcore.(*ioCore).Write+0x53		/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/zapcore/core.go:95
+#	0x104bf3363	go.uber.org/zap/zapcore.(*CheckedEntry).Write+0xd3	/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/zapcore/entry.go:253
+#	0x104d6701b	go.uber.org/zap.(*Logger).Debug+0x4b			/Users/ya/go/pkg/mod/go.uber.org/zap@v1.27.0/logger.go:239
+#	0x104f5ca2b	main.configureServer.Logger.func1.1+0x40b		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:30
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37			/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253		/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf			/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527				/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [16: 1179648] @ 0x104cdbf9c 0x104cdbf2d 0x104ce5584 0x104ce5551 0x104ce580c 0x104f58cd0 0x104f5c1f0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104cdbf9b	compress/flate.(*compressor).initDeflate+0x46b							/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:372
+#	0x104cdbf2c	compress/flate.(*compressor).init+0x3fc								/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:593
+#	0x104ce5583	compress/flate.NewWriter+0x253									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:664
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104ce580b	compress/gzip.(*Writer).Close+0x4b								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:237
+#	0x104f58ccf	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Close+0x1f	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:97
+#	0x104f5c1ef	main.configureServer.Compress.func2.1+0x13f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:45
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [87: 57729024] @ 0x104ce5570 0x104ce5551 0x104ce580c 0x104f58cd0 0x104f5c1f0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104ce556f	compress/flate.NewWriter+0x23f									/opt/homebrew/opt/go/libexec/src/compress/flate/deflate.go:663
+#	0x104ce5550	compress/gzip.(*Writer).Write+0x220								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:191
+#	0x104ce580b	compress/gzip.(*Writer).Close+0x4b								/opt/homebrew/opt/go/libexec/src/compress/gzip/gzip.go:237
+#	0x104f58ccf	github.com/yapryntsev/go-musthave-metrics/internal/middleware.(*compressWriter).Close+0x1f	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:97
+#	0x104f5c1ef	main.configureServer.Compress.func2.1+0x13f							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:45
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb							/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37								/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253							/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf								/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 16] @ 0x104e1e4c0 0x104e21cd8 0x104e21b8c 0x104e20b60 0x104e204dc 0x104f352a0 0x104f3d52c 0x104f3d53d 0x104f3fe30 0x104f51cbc 0x104f538b8 0x104f53c0c 0x104f5382c 0x104f54aa0 0x104f54804 0x104f58360 0x104d3af18 0x104d8d53c 0x104d3af18 0x104f5c1d0 0x104d3af18 0x104f5c6ec 0x104d3af18 0x104d8c3b4 0x104d55470 0x104d39758 0x104b5d5d4
+#	0x104e1e4bf	github.com/jackc/pgx/v5/pgconn.(*PgConn).convertRowDescription+0xaf					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:837
+#	0x104e21cd7	github.com/jackc/pgx/v5/pgconn.(*ResultReader).receiveMessage+0xf7					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:1684
+#	0x104e21b8b	github.com/jackc/pgx/v5/pgconn.(*ResultReader).readUntilRowDescription+0x4b				/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:1656
+#	0x104e20b5f	github.com/jackc/pgx/v5/pgconn.(*PgConn).execExtendedSuffix+0x14f					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:1233
+#	0x104e204db	github.com/jackc/pgx/v5/pgconn.(*PgConn).ExecPrepared+0xfb						/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:1178
+#	0x104f3529f	github.com/jackc/pgx/v5.(*Conn).Query+0xe0f								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:820
+#	0x104f3d52b	github.com/jackc/pgx/v5.(*Conn).QueryRow+0x4b								/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:904
+#	0x104f3d53c	github.com/jackc/pgx/v5/pgxpool.(*Conn).QueryRow+0x5c							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/conn.go:95
+#	0x104f3fe2f	github.com/jackc/pgx/v5/pgxpool.(*Pool).QueryRow+0x5f							/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/pool.go:744
+#	0x104f51cbb	github.com/yapryntsev/go-musthave-metrics/internal/repository.(*DatabaseMetricRepository).Get+0x17b	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/repository_db.go:98
+#	0x104f538b7	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.Get.func1+0x37	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:45
+#	0x104f53c0b	github.com/yapryntsev/go-musthave-metrics/internal/repository.performOperationWithRetry+0x2b		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:99
+#	0x104f5382b	github.com/yapryntsev/go-musthave-metrics/internal/repository.retryableRepository.Get+0x7b		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/repository/retryable_repository.go:43
+#	0x104f54a9f	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).getCurrentCounterMetric+0x3f	/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:128
+#	0x104f54803	github.com/yapryntsev/go-musthave-metrics/internal/service.(*Service).UpdateBatch+0x1d3			/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/service/service.go:104
+#	0x104f5835f	github.com/yapryntsev/go-musthave-metrics/internal/handler.(*MetricHandler).UpdateBatch+0x22f		/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/handler/handler.go:251
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8d53b	github.com/go-chi/chi/v5.(*Mux).routeHTTP+0x27b								/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:477
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c1cf	main.configureServer.Compress.func2.1+0x11f								/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/compress.go:44
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104f5c6eb	main.configureServer.Logger.func1.1+0xcb								/Users/ya/Developer/Learn/Go/go-musthave-metrics/internal/middleware/logger.go:20
+#	0x104d3af17	net/http.HandlerFunc.ServeHTTP+0x37									/opt/homebrew/opt/go/libexec/src/net/http/server.go:2322
+#	0x104d8c3b3	github.com/go-chi/chi/v5.(*Mux).ServeHTTP+0x253								/Users/ya/go/pkg/mod/github.com/go-chi/chi/v5@v5.2.3/mux.go:90
+#	0x104d5546f	net/http.serverHandler.ServeHTTP+0xaf									/opt/homebrew/opt/go/libexec/src/net/http/server.go:3340
+#	0x104d39757	net/http.(*conn).serve+0x527										/opt/homebrew/opt/go/libexec/src/net/http/server.go:2109
+
+0: 0 [1: 1152] @ 0x104e1b450 0x104e1b124 0x104e1a2a0 0x104f32800 0x104f31fa4 0x104f3df4c 0x104f422d8 0x104b5d5d4
+#	0x104e1b44f	github.com/jackc/pgx/v5/pgconn.connectOne+0x4f				/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:307
+#	0x104e1b123	github.com/jackc/pgx/v5/pgconn.connectPreferred+0x1e3			/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:262
+#	0x104e1a29f	github.com/jackc/pgx/v5/pgconn.ConnectConfig+0xff			/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgconn/pgconn.go:157
+#	0x104f327ff	github.com/jackc/pgx/v5.connect+0x27f					/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:275
+#	0x104f31fa3	github.com/jackc/pgx/v5.ConnectConfig+0xe3				/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/conn.go:159
+#	0x104f3df4b	github.com/jackc/pgx/v5/pgxpool.NewWithConfig.func3+0x16b		/Users/ya/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.6/pgxpool/pool.go:280
+#	0x104f422d7	github.com/jackc/puddle/v2.(*Pool[...]).initResourceValue.func1+0xb7	/Users/ya/go/pkg/mod/github.com/jackc/puddle/v2@v2.2.2/pool.go:423
+
+1: 2048 [1: 2048] @ 0x104b2407c 0x104b24c74 0x104b25330 0x104b555bc 0x104b280a4 0x104b285e0 0x104b28a4c 0x104b5b1d4
+#	0x104b2407b	runtime.allocm+0x9b		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:2339
+#	0x104b24c73	runtime.newm+0x43		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:2875
+#	0x104b2532f	runtime.startm+0x13f		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:3101
+#	0x104b555bb	runtime.wakep+0x16b		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:3248
+#	0x104b280a3	runtime.resetspinning+0x73	/opt/homebrew/opt/go/libexec/src/runtime/proc.go:4022
+#	0x104b285df	runtime.schedule+0xff		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:4175
+#	0x104b28a4b	runtime.park_m+0x2ab		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:4280
+#	0x104b5b1d3	runtime.mcall+0x53		/opt/homebrew/opt/go/libexec/src/runtime/asm_arm64.s:241
+
+1: 2048 [1: 2048] @ 0x104b2407c 0x104b24c74 0x104b25330 0x104b555bc 0x104b280a4 0x104b285e0 0x104b23598 0x104b234a0 0x104b5b160
+#	0x104b2407b	runtime.allocm+0x9b		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:2339
+#	0x104b24c73	runtime.newm+0x43		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:2875
+#	0x104b2532f	runtime.startm+0x13f		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:3101
+#	0x104b555bb	runtime.wakep+0x16b		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:3248
+#	0x104b280a3	runtime.resetspinning+0x73	/opt/homebrew/opt/go/libexec/src/runtime/proc.go:4022
+#	0x104b285df	runtime.schedule+0xff		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:4175
+#	0x104b23597	runtime.mstart1+0xd7		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:1949
+#	0x104b2349f	runtime.mstart0+0x5f		/opt/homebrew/opt/go/libexec/src/runtime/proc.go:1895
+#	0x104b5b15f	runtime.mstart+0xf		/opt/homebrew/opt/go/libexec/src/runtime/asm_arm64.s:179
+
+
+# runtime.MemStats
+# Alloc = 2388264
+# TotalAlloc = 127617456
+# Sys = 14043400
+# Lookups = 0
+# Mallocs = 117750
+# Frees = 114845
+# HeapAlloc = 2388264
+# HeapSys = 7634944
+# HeapIdle = 4046848
+# HeapInuse = 3588096
+# HeapReleased = 2514944
+# HeapObjects = 2905
+# Stack = 753664 / 753664
+# MSpan = 98400 / 114240
+# MCache = 14496 / 15704
+# BuckHashSys = 1454850
+# GCSys = 2690832
+# OtherSys = 1379166
+# NextGC = 4194304
+# LastGC = 1768758771676193000
+# PauseNs = [54374 110959 136667 56834 97041 86333 57917 58666 94750 72416 61332 54000 71209 80041 84542 144541 81250 82875 95625 88751 93625 87541 131750 108834 124667 110250 140084 49500 99834 86416 99083 94167 83709 150791 84417 80292 98167 40833 57499 153708 109709 80251 77708 82001 69626 43000 122917 68625 122334 113709 105542 86124 113917 135708 78750 130834 120333 90209 139874 84709 106917 125457 122749 49584 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+# PauseEnd = [1768758527675934000 1768758531676422000 1768758535686884000 1768758539675644000 1768758543676806000 1768758547684377000 1768758551675300000 1768758557672392000 1768758561676249000 1768758564022062000 1768758567675185000 1768758571684535000 1768758575674789000 1768758579676596000 1768758583687455000 1768758589673883000 1768758591677019000 1768758594106130000 1768758595688100000 1768758599677646000 1768758605677031000 1768758609677106000 1768758613676551000 1768758617678345000 1768758621678745000 1768758625676773000 1768758631671735000 1768758635676607000 1768758639674647000 1768758643690984000 1768758647676875000 1768758653675405000 1768758657677743000 1768758661676180000 1768758667674323000 1768758671676107000 1768758674865172000 1768758677674108000 1768758681677296000 1768758687672696000 1768758689678026000 1768758693677806000 1768758697675698000 1768758703678351000 1768758704941336000 1768758705675986000 1768758709677159000 1768758713677128000 1768758717677288000 1768758723673083000 1768758727687455000 1768758729677511000 1768758733672809000 1768758735677533000 1768758739687844000 1768758743678168000 1768758747674118000 1768758751692686000 1768758755679393000 1768758759676967000 1768758763314432000 1768758764426753000 1768758767677764000 1768758771676193000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+# NumGC = 64
+# NumForcedGC = 0
+# GCCPUFraction = 3.941175906374271e-05
+# DebugGC = false
+# MaxRSS = 26492928

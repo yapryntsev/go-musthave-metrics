@@ -1,3 +1,4 @@
+// Package models contains app's models.
 package models
 
 // Metric types.

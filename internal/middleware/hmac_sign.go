@@ -15,6 +15,7 @@ import (
 
 const SignedBodyHeader = "HashSHA256"
 
+// SignBody signs responses and validates request signatures.
 func SignBody(key string, log *zap.Logger) func(next http.Handler) http.Handler {
 	if key == "" {
 		log.Debug("body sign middleware disabled. no key found")

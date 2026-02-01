@@ -23,7 +23,15 @@ import (
 
 var log *zap.Logger
 
+var buildVersion string = "N/A"
+var buildDate string = "N/A"
+var buildCommit string = "N/A"
+
 func main() {
+	_, _ = fmt.Fprintf(os.Stdout, "Build version: %s\n", buildVersion)
+	_, _ = fmt.Fprintf(os.Stdout, "Build date: %s\n", buildDate)
+	_, _ = fmt.Fprintf(os.Stdout, "Build commit: %s\n", buildCommit)
+
 	setupLogger()
 	parseFlags(os.Args[1:], log)
 

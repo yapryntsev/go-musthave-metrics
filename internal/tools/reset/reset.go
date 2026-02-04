@@ -1,4 +1,4 @@
-package main
+package reset
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log"
 	"os"
 	"strings"
 	"text/template"
@@ -31,6 +32,8 @@ var tmpl = template.Must(template.New("reset").Parse(templateStr))
 
 func main() {
 	fset := token.NewFileSet()
+	logger := log.Default()
+
 	err := forEachFile(
 		fset,
 		func(file *ast.File, node ast.Node) bool {
@@ -52,11 +55,12 @@ func main() {
 
 			outputFile, err := os.OpenFile(outputPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0664)
 			if err != nil {
-				panic(err)
+				logger.Println("failed to open file: %w", err)
 			}
+			defer func() { _ = outputFile.Close() }()
 
 			if err := tmpl.Execute(outputFile, payload); err != nil {
-				panic(err)
+
 			}
 
 			return false

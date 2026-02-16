@@ -18,6 +18,7 @@ const (
 	flagSignKeyDefault   = ""
 	flagAuditFileDefault = ""
 	flagAuditURLDefault  = ""
+	flagCryptoKeyDefault = ""
 
 	flagAddrKey      = "a"
 	flagStoreIntKey  = "i"
@@ -27,6 +28,7 @@ const (
 	flagSignKeyKey   = "k"
 	flagAuditFileKey = "audit-file"
 	flagAuditURLKey  = "audit-url"
+	flagCryptoKeyKey = "crypto-key"
 
 	envAddrKey      = "ADDRESS"
 	envStoreIntKey  = "STORE_INTERVAL"
@@ -36,6 +38,7 @@ const (
 	envSignKeyKey   = "KEY"
 	envAuditFileKey = "AUDIT_FILE"
 	envAuditURLKey  = "AUDIT_URL"
+	envCryptoKeyKey = "CRYPTO_KEY"
 )
 
 var (
@@ -47,6 +50,7 @@ var (
 	flagSignKey   string
 	flagAuditFile string
 	flagAuditURL  string
+	flagCryptoKey string
 )
 
 func parseFlags(args []string, log *zap.Logger) {
@@ -60,6 +64,7 @@ func parseFlags(args []string, log *zap.Logger) {
 	fs.StringVar(&flagSignKey, flagSignKeyKey, flagSignKeyDefault, "key used to sign request body")
 	fs.StringVar(&flagAuditFile, flagAuditFileKey, flagAuditFileDefault, "audit file")
 	fs.StringVar(&flagAuditURL, flagAuditURLKey, flagAuditURLDefault, "audit remote service url")
+	fs.StringVar(&flagCryptoKey, flagCryptoKeyKey, flagCryptoKeyDefault, "crypto key file path")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -106,5 +111,9 @@ func parseFlags(args []string, log *zap.Logger) {
 
 	if auditURL, ok := os.LookupEnv(envAuditURLKey); ok {
 		flagAuditURL = auditURL
+	}
+
+	if envCryptoKey, ok := os.LookupEnv(envCryptoKeyKey); ok {
+		flagCryptoKey = envCryptoKey
 	}
 }

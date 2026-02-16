@@ -14,16 +14,19 @@ const (
 	flagReportIntDefault = uint(10)
 	flagPollIntDefault   = uint(2)
 	flagSignKeyDefault   = ""
+	flagCryptoKeyDefault = ""
 
 	flagAddrKey      = "a"
 	flagReportIntKey = "r"
 	flagPollIntKey   = "p"
 	flagSignKeyKey   = "k"
+	flagCryptoKeyKey = "crypto-key"
 
 	envAddrKey      = "ADDRESS"
 	envReportIntKey = "REPORT_INTERVAL"
 	envPollIntKey   = "POLL_INTERVAL"
 	envSignKeyKey   = "KEY"
+	envCryptoKeyKey = "CRYPTO_KEY"
 )
 
 var (
@@ -31,6 +34,7 @@ var (
 	flagReportInt uint
 	flagPollInt   uint
 	flagSignKey   string
+	flagCryptoKey string
 )
 
 func parseFlags(args []string, l *zap.Logger) {
@@ -39,6 +43,7 @@ func parseFlags(args []string, l *zap.Logger) {
 	fs.StringVar(&flagAddr, flagAddrKey, flagAddrDefault, `server endpoint`)
 	fs.UintVar(&flagPollInt, flagPollIntKey, flagPollIntDefault, `frequency of gathering metrics in sec`)
 	fs.StringVar(&flagSignKey, flagSignKeyKey, flagSignKeyDefault, "key used to sign request body")
+	fs.StringVar(&flagCryptoKey, flagCryptoKeyKey, flagCryptoKeyDefault, "crypto key file path")
 	fs.UintVar(
 		&flagReportInt,
 		flagReportIntKey,
@@ -75,5 +80,9 @@ func parseFlags(args []string, l *zap.Logger) {
 
 	if signKey, ok := os.LookupEnv(envSignKeyKey); ok {
 		flagSignKey = signKey
+	}
+
+	if envCryptoKey, ok := os.LookupEnv(envCryptoKeyKey); ok {
+		flagCryptoKey = envCryptoKey
 	}
 }

@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -46,5 +49,34 @@ func main() {
 
 func configureAgent(l *zap.Logger) *agent.Agent {
 	l.Debug("agent bootstrap")
-	return agent.New(flagAddr, flagReportInt, flagPollInt, flagSignKey, l)
+
+	cert, err := fetchCert()
+	if err != nil {
+		l.Fatal("failed to fetch cert", zap.Error(err))
+	}
+
+	return agent.New(flagAddr, flagReportInt, flagPollInt, flagSignKey, cert, l)
+}
+
+func fetchCert() (*x509.Certificate, error) {
+	if flagCryptoKey == "" {
+		return nil, nil
+	}
+
+	file, err := os.ReadFile(flagCryptoKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	pemBlock, _ := pem.Decode(file)
+	if pemBlock == nil {
+		return nil, errors.New("failed to decode provided file")
+	}
+
+	cert, err := x509.ParseCertificate(pemBlock.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: %w", err)
+	}
+
+	return cert, nil
 }

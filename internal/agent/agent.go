@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	crand "crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -35,6 +38,7 @@ type Agent struct {
 	reportInterval uint
 	pollInterval   uint
 	signKey        string
+	cert           *x509.Certificate
 
 	// Metrics
 	pollCount      int
@@ -45,7 +49,14 @@ type Agent struct {
 }
 
 // New creates a new instance of the Agent.
-func New(addr string, reportInterval uint, pollInterval uint, signKey string, log *zap.Logger) *Agent {
+func New(
+	addr string,
+	reportInterval uint,
+	pollInterval uint,
+	signKey string,
+	cert *x509.Certificate,
+	log *zap.Logger,
+) *Agent {
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -66,6 +77,7 @@ func New(addr string, reportInterval uint, pollInterval uint, signKey string, lo
 		reportInterval: reportInterval,
 		pollInterval:   pollInterval,
 		signKey:        signKey,
+		cert:           cert,
 	}
 }
 
@@ -288,8 +300,20 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 		req = req.SetHeader(middleware.SignedBodyHeader, hex.EncodeToString(hashSum))
 	}
 
+	var body []byte
+
+	if a.cert != nil {
+		msg, err := rsa.EncryptPKCS1v15(crand.Reader, a.cert.PublicKey.(*rsa.PublicKey), buf.Bytes())
+		if err != nil {
+			return err
+		}
+		body = msg
+	} else {
+		body = buf.Bytes()
+	}
+
 	resp, err := req.
-		SetBody(buf.Bytes()).
+		SetBody(body).
 		Post(fmt.Sprintf("http://%s/updates", a.addr))
 
 	if err != nil {

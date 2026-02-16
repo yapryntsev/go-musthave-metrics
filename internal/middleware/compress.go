@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Compress implements response compression and request decompression using gzip.
 func Compress(log *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

@@ -31,7 +31,12 @@ func main() {
 	setupLogger()
 	parseFlags(os.Args[1:], log)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+	)
 
 	db := configureDB(ctx, log)
 	server := configureServer(flagAddr, db, log)

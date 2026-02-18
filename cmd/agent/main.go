@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/yapryntsev/go-musthave-metrics/internal/agent"
 	"go.uber.org/zap"
@@ -24,7 +25,12 @@ func main() {
 	stopSignal := make(chan struct{}, 1)
 
 	appAgent := configureAgent(l)
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+	)
 
 	go func() {
 		l.Debug("agent is running")

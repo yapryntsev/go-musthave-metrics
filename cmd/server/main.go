@@ -29,7 +29,11 @@ var log *zap.Logger
 
 func main() {
 	setupLogger()
-	parseFlags(os.Args[1:], log)
+
+	err := parseFlags(os.Args[1:])
+	if err != nil {
+		log.Fatal("failed to launch app instance", zap.Error(err))
+	}
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(),

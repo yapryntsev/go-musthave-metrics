@@ -13,6 +13,7 @@ import (
 
 	"github.com/yapryntsev/go-musthave-metrics/internal/agent"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -21,8 +22,10 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to initiate logger: %w", err))
 	}
 
-	parseFlags(os.Args[1:], l)
-	stopSignal := make(chan struct{}, 1)
+	err = parseFlags(os.Args[1:])
+	if err != nil {
+		l.Fatal("failed to launch app instance", zap.Error(err))
+	}
 
 	appAgent := configureAgent(l)
 	ctx, cancel := signal.NotifyContext(
@@ -32,22 +35,17 @@ func main() {
 		syscall.SIGQUIT,
 	)
 
-	go func() {
-		l.Debug("agent is running")
-		if err := appAgent.StartGathering(ctx); err != nil {
-			l.Error("agent failed with error", zap.Error(err))
-			stopSignal <- struct{}{}
-		}
-	}()
+	group, ctx := errgroup.WithContext(ctx)
+	group.Go(
+		func() error {
+			l.Debug("agent is running")
+			return appAgent.StartGathering(ctx)
+		},
+	)
 
-	go func() {
-		<-ctx.Done()
-
-		l.Debug("shutting down with os signal")
-		stopSignal <- struct{}{}
-	}()
-
-	<-stopSignal
+	if err := group.Wait(); err != nil {
+		l.Error("agent failed with error", zap.Error(err))
+	}
 
 	l.Debug("shutdown the agent")
 	cancel()

@@ -13,13 +13,12 @@ import (
 func Decryptor(key *rsa.PrivateKey, log *zap.Logger) func(next http.Handler) http.Handler {
 	if key == nil {
 		log.Debug("body sign middleware disabled. no key found")
+		return func(next http.Handler) http.Handler {
+			return next
+		}
 	}
 
 	return func(next http.Handler) http.Handler {
-		if key == nil {
-			return next
-		}
-
 		return http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)

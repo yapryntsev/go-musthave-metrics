@@ -2,14 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 const (
@@ -25,7 +23,7 @@ const (
 	flagPollIntKey    = "p"
 	flagSignKeyKey    = "k"
 	flagCryptoKeyKey  = "crypto-key"
-	flagConfigPathKey = "c"
+	flagConfigPathKey = "config"
 
 	envAddrKey       = "ADDRESS"
 	envReportIntKey  = "REPORT_INTERVAL"
@@ -50,32 +48,42 @@ type config struct {
 	CryptoKey      string `json:"crypto_key"`
 }
 
-func parseFlags(args []string, l *zap.Logger) {
-	parseConfig(l)
-	parseArgs(args, l)
-	parseEnv(l)
+func parseFlags(args []string) error {
+	var errs []error
+
+	errs = append(errs, parseConfig(args))
+	errs = append(errs, parseArgs(args))
+	errs = append(errs, parseEnv())
+
+	return errors.Join(errs...)
 }
 
-func parseConfig(l *zap.Logger) {
+func parseConfig(args []string) error {
 	var configPath string
 
-	flag.StringVar(&configPath, flagConfigPathKey, flagConfigPathDefault, "config file path")
+	fs := flag.NewFlagSet("config-flag", flag.ContinueOnError)
+	fs.StringVar(&configPath, flagConfigPathKey, flagConfigPathDefault, "config file path")
 
-	var conf config
-	if configPath == "" {
-		file, err := os.Open(configPath)
-		if err != nil {
-			log.Fatal("failed to read config file", zap.Error(err))
-		}
-
-		err = json.NewDecoder(file).Decode(&conf)
-		if err != nil {
-			log.Fatal("failed to decode config file", zap.Error(err))
-		}
+	err := fs.Parse(args)
+	if err != nil {
+		return fmt.Errorf("failed to parse flags: %w", err)
 	}
 
 	if envConfigPath, ok := os.LookupEnv(envConfigPathKey); ok {
 		configPath = envConfigPath
+	}
+
+	var conf config
+	if configPath != "" {
+		file, err := os.Open(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to read config file: %w", err)
+		}
+
+		err = json.NewDecoder(file).Decode(&conf)
+		if err != nil {
+			return fmt.Errorf("failed to decode config file: %w", err)
+		}
 	}
 
 	flagAddr = conf.Address
@@ -83,18 +91,20 @@ func parseConfig(l *zap.Logger) {
 
 	val, err := time.ParseDuration(conf.ReportInterval)
 	if err != nil {
-		l.Fatal("failed to decode report interval config value", zap.Error(err))
+		return fmt.Errorf("failed to decode report interval config value: %w", err)
 	}
 	flagReportInt = uint(val.Seconds())
 
 	val, err = time.ParseDuration(conf.PollInterval)
 	if err != nil {
-		l.Fatal("failed to decode report interval config value", zap.Error(err))
+		return fmt.Errorf("failed to decode report interval config value: %w", err)
 	}
 	flagPollInt = uint(val.Seconds())
+
+	return nil
 }
 
-func parseArgs(args []string, l *zap.Logger) {
+func parseArgs(args []string) error {
 	fs := flag.NewFlagSet("flags", flag.ExitOnError)
 
 	fs.StringVar(&flagAddr, flagAddrKey, flagAddrDefault, `server endpoint`)
@@ -110,11 +120,13 @@ func parseArgs(args []string, l *zap.Logger) {
 
 	err := fs.Parse(args)
 	if err != nil {
-		l.Fatal("failed to parse flags", zap.Error(err))
+		return fmt.Errorf("failed to parse flags: %w", err)
 	}
+
+	return nil
 }
 
-func parseEnv(l *zap.Logger) {
+func parseEnv() error {
 	if envAddr, ok := os.LookupEnv(envAddrKey); ok {
 		flagAddr = envAddr
 	}
@@ -122,19 +134,19 @@ func parseEnv(l *zap.Logger) {
 	if envReportInt, ok := os.LookupEnv(envReportIntKey); ok {
 		f, err := strconv.Atoi(envReportInt)
 		if err != nil {
-			l.Error(fmt.Sprintf("failed to parse env value: %s", envReportInt))
-		} else {
-			flagReportInt = uint(f)
+			return fmt.Errorf("failed to parse env value: %s", envReportInt)
 		}
+
+		flagReportInt = uint(f)
 	}
 
 	if envPollInt, ok := os.LookupEnv(envPollIntKey); ok {
 		f, err := strconv.Atoi(envPollInt)
 		if err != nil {
-			l.Error(fmt.Sprintf("failed to parse env value: %s", envPollIntKey))
-		} else {
-			flagPollInt = uint(f)
+			return fmt.Errorf("failed to parse env value: %s", envPollIntKey)
 		}
+
+		flagPollInt = uint(f)
 	}
 
 	if signKey, ok := os.LookupEnv(envSignKeyKey); ok {
@@ -144,4 +156,6 @@ func parseEnv(l *zap.Logger) {
 	if envCryptoKey, ok := os.LookupEnv(envCryptoKeyKey); ok {
 		flagCryptoKey = envCryptoKey
 	}
+
+	return nil
 }

@@ -1,41 +1,48 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"strconv"
-
-	"go.uber.org/zap"
+	"time"
 )
 
 const (
-	flagAddrDefault      = "localhost:8080"
-	flagStoreIntDefault  = uint(300)
-	flagStorePathDefault = "./storage"
-	flagRestoreDefault   = true
-	flagDsnDefault       = ""
-	flagSignKeyDefault   = ""
-	flagAuditFileDefault = ""
-	flagAuditURLDefault  = ""
+	flagAddrDefault       = "localhost:8080"
+	flagStoreIntDefault   = uint(300)
+	flagStorePathDefault  = "./storage"
+	flagRestoreDefault    = true
+	flagDsnDefault        = ""
+	flagSignKeyDefault    = ""
+	flagAuditFileDefault  = ""
+	flagAuditURLDefault   = ""
+	flagCryptoKeyDefault  = ""
+	flagConfigPathDefault = ""
 
-	flagAddrKey      = "a"
-	flagStoreIntKey  = "i"
-	flagStorePathKey = "f"
-	flagRestoreKey   = "r"
-	flagDsnKey       = "d"
-	flagSignKeyKey   = "k"
-	flagAuditFileKey = "audit-file"
-	flagAuditURLKey  = "audit-url"
+	flagAddrKey       = "a"
+	flagStoreIntKey   = "i"
+	flagStorePathKey  = "f"
+	flagRestoreKey    = "r"
+	flagDsnKey        = "d"
+	flagSignKeyKey    = "k"
+	flagAuditFileKey  = "audit-file"
+	flagAuditURLKey   = "audit-url"
+	flagCryptoKeyKey  = "crypto-key"
+	flagConfigPathKey = "config"
 
-	envAddrKey      = "ADDRESS"
-	envStoreIntKey  = "STORE_INTERVAL"
-	envStorePathKey = "FILE_STORAGE_PATH"
-	envRestoreKey   = "RESTORE"
-	envDsnKey       = "DATABASE_DSN"
-	envSignKeyKey   = "KEY"
-	envAuditFileKey = "AUDIT_FILE"
-	envAuditURLKey  = "AUDIT_URL"
+	envAddrKey       = "ADDRESS"
+	envStoreIntKey   = "STORE_INTERVAL"
+	envStorePathKey  = "FILE_STORAGE_PATH"
+	envRestoreKey    = "RESTORE"
+	envDsnKey        = "DATABASE_DSN"
+	envSignKeyKey    = "KEY"
+	envAuditFileKey  = "AUDIT_FILE"
+	envAuditURLKey   = "AUDIT_URL"
+	envCryptoKeyKey  = "CRYPTO_KEY"
+	envConfigPathKey = "CONFIG"
 )
 
 var (
@@ -47,9 +54,72 @@ var (
 	flagSignKey   string
 	flagAuditFile string
 	flagAuditURL  string
+	flagCryptoKey string
 )
 
-func parseFlags(args []string, log *zap.Logger) {
+type config struct {
+	Address       string `json:"address"`
+	Restore       bool   `json:"restore"`
+	StoreInterval string `json:"store_interval"`
+	StoreFile     string `json:"store_file"`
+	DatabaseDsn   string `json:"database_dsn"`
+	CryptoKey     string `json:"crypto_key"`
+}
+
+func parseFlags(args []string) error {
+	var errs []error
+
+	errs = append(errs, parseConfig(args))
+	errs = append(errs, parseArgs(args))
+	errs = append(errs, parseEnv())
+
+	return errors.Join(errs...)
+}
+
+func parseConfig(args []string) error {
+	var configPath string
+
+	fs := flag.NewFlagSet("config-flag", flag.ContinueOnError)
+	fs.StringVar(&configPath, flagConfigPathKey, flagConfigPathDefault, "config file path")
+
+	err := fs.Parse(args)
+	if err != nil {
+		return fmt.Errorf("failed to parse flags: %w", err)
+	}
+
+	if envConfigPath, ok := os.LookupEnv(envConfigPathKey); ok {
+		configPath = envConfigPath
+	}
+
+	var conf config
+	if configPath != "" {
+		file, err := os.Open(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to read config file: %w", err)
+		}
+
+		err = json.NewDecoder(file).Decode(&conf)
+		if err != nil {
+			return fmt.Errorf("failed to decode config file: %w", err)
+		}
+	}
+
+	flagAddr = conf.Address
+	flagRestore = conf.Restore
+	flagStorePath = conf.StoreFile
+	flagDsn = conf.DatabaseDsn
+	flagCryptoKey = conf.CryptoKey
+
+	val, err := time.ParseDuration(conf.StoreInterval)
+	if err != nil {
+		return fmt.Errorf("failed to decode report interval config value: %w", err)
+	}
+
+	flagStoreInt = uint(val.Seconds())
+	return nil
+}
+
+func parseArgs(args []string) error {
 	fs := flag.NewFlagSet("flags", flag.ExitOnError)
 
 	fs.StringVar(&flagAddr, flagAddrKey, flagAddrDefault, `server endpoint`)
@@ -60,12 +130,17 @@ func parseFlags(args []string, log *zap.Logger) {
 	fs.StringVar(&flagSignKey, flagSignKeyKey, flagSignKeyDefault, "key used to sign request body")
 	fs.StringVar(&flagAuditFile, flagAuditFileKey, flagAuditFileDefault, "audit file")
 	fs.StringVar(&flagAuditURL, flagAuditURLKey, flagAuditURLDefault, "audit remote service url")
+	fs.StringVar(&flagCryptoKey, flagCryptoKeyKey, flagCryptoKeyDefault, "crypto key file path")
 
 	err := fs.Parse(args)
 	if err != nil {
-		log.Fatal("failed to parse flags", zap.Error(err))
+		return fmt.Errorf("failed to parse flags: %w", err)
 	}
 
+	return nil
+}
+
+func parseEnv() error {
 	if envAddr, ok := os.LookupEnv(envAddrKey); ok {
 		flagAddr = envAddr
 	}
@@ -73,10 +148,10 @@ func parseFlags(args []string, log *zap.Logger) {
 	if envStoreInt, ok := os.LookupEnv(envStoreIntKey); ok {
 		d, err := strconv.Atoi(envStoreInt)
 		if err != nil {
-			log.Error(fmt.Sprintf("failed to parse env value: %s", envStoreIntKey))
-		} else {
-			flagStoreInt = uint(d)
+			return fmt.Errorf("failed to parse env value: %s", envStoreIntKey)
 		}
+
+		flagStoreInt = uint(d)
 	}
 
 	if envStorePath, ok := os.LookupEnv(envStorePathKey); ok {
@@ -86,10 +161,10 @@ func parseFlags(args []string, log *zap.Logger) {
 	if envRestore, ok := os.LookupEnv(envRestoreKey); ok {
 		b, err := strconv.ParseBool(envRestore)
 		if err != nil {
-			log.Error(fmt.Sprintf("failed to parse env value: %s", envRestoreKey))
-		} else {
-			flagRestore = b
+			return fmt.Errorf("failed to parse env value: %s", envRestoreKey)
 		}
+
+		flagRestore = b
 	}
 
 	if envDsn, ok := os.LookupEnv(envDsnKey); ok {
@@ -107,4 +182,10 @@ func parseFlags(args []string, log *zap.Logger) {
 	if auditURL, ok := os.LookupEnv(envAuditURLKey); ok {
 		flagAuditURL = auditURL
 	}
+
+	if envCryptoKey, ok := os.LookupEnv(envCryptoKeyKey); ok {
+		flagCryptoKey = envCryptoKey
+	}
+
+	return nil
 }

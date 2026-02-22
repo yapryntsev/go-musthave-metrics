@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -33,9 +37,18 @@ func main() {
 	_, _ = fmt.Fprintf(os.Stdout, "Build commit: %s\n", buildCommit)
 
 	setupLogger()
-	parseFlags(os.Args[1:], log)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := parseFlags(os.Args[1:])
+	if err != nil {
+		log.Fatal("failed to launch app instance", zap.Error(err))
+	}
+
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+	)
 
 	db := configureDB(ctx, log)
 	server := configureServer(flagAddr, db, log)
@@ -146,10 +159,16 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
 		metricHandler.Audit(auditor)
 	}
 
+	privateKey, err := fetchPrivateKey()
+	if err != nil {
+		log.Fatal("failed to fetch private key", zap.Error(err))
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger(log))
 	r.Use(middleware.SignBody(flagSignKey, log))
 	r.Use(middleware.Compress(log))
+	r.Use(middleware.Decryptor(privateKey, log))
 
 	r.Mount("/debug", chiMv.Profiler())
 
@@ -197,4 +216,27 @@ func setupLogger() {
 	if err != nil {
 		panic(fmt.Errorf("failed to initiate logger: %w", err))
 	}
+}
+
+func fetchPrivateKey() (*rsa.PrivateKey, error) {
+	if flagCryptoKey == "" {
+		return nil, nil
+	}
+
+	file, err := os.ReadFile(flagCryptoKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	pemBlock, _ := pem.Decode(file)
+	if pemBlock == nil {
+		return nil, errors.New("failed to decode provided file")
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	return key, nil
 }

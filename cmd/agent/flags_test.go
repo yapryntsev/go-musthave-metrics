@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 func Test_ParseEnv(t *testing.T) {
@@ -26,7 +25,7 @@ func Test_ParseEnv(t *testing.T) {
 	}
 
 	// When
-	parseFlags([]string{}, zaptest.NewLogger(t))
+	_ = parseFlags([]string{})
 
 	// Then
 	for _, test := range tests {
@@ -58,7 +57,7 @@ func Test_ParseFlag(t *testing.T) {
 	}
 
 	// When
-	parseFlags(args, zaptest.NewLogger(t))
+	_ = parseFlags(args)
 
 	// Then
 	for _, test := range tests {
@@ -82,7 +81,7 @@ func Test_PassNoFlag_SetDefault(t *testing.T) {
 	}
 
 	// When
-	parseFlags([]string{}, zaptest.NewLogger(t))
+	_ = parseFlags([]string{})
 
 	// Then
 	for _, test := range tests {
@@ -111,7 +110,7 @@ func Test_PassInvalidEnv_SetDefault(t *testing.T) {
 	}
 
 	// When
-	parseFlags([]string{}, zaptest.NewLogger(t))
+	_ = parseFlags([]string{})
 
 	// Then
 	for _, test := range tests {

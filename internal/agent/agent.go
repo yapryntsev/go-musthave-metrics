@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"net/http"
 	"runtime"
 	"sync"
@@ -288,10 +289,16 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 		return err
 	}
 
+	host, _, err := net.SplitHostPort(a.addr)
+	if err != nil {
+		return err
+	}
+
 	req := a.client.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
-		SetHeader("Content-Encoding", "gzip")
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("X-Real-IP", host)
 
 	if a.signKey != "" {
 		hasher := middleware.NewHasher(a.signKey)

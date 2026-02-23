@@ -11,50 +11,54 @@ import (
 )
 
 const (
-	flagAddrDefault       = "localhost:8080"
-	flagStoreIntDefault   = uint(300)
-	flagStorePathDefault  = "./storage"
-	flagRestoreDefault    = true
-	flagDsnDefault        = ""
-	flagSignKeyDefault    = ""
-	flagAuditFileDefault  = ""
-	flagAuditURLDefault   = ""
-	flagCryptoKeyDefault  = ""
-	flagConfigPathDefault = ""
+	flagAddrDefault          = "localhost:8080"
+	flagStoreIntDefault      = uint(300)
+	flagStorePathDefault     = "./storage"
+	flagRestoreDefault       = true
+	flagDsnDefault           = ""
+	flagSignKeyDefault       = ""
+	flagAuditFileDefault     = ""
+	flagAuditURLDefault      = ""
+	flagCryptoKeyDefault     = ""
+	flagConfigPathDefault    = ""
+	flagTrustedSubnetDefault = ""
 
-	flagAddrKey       = "a"
-	flagStoreIntKey   = "i"
-	flagStorePathKey  = "f"
-	flagRestoreKey    = "r"
-	flagDsnKey        = "d"
-	flagSignKeyKey    = "k"
-	flagAuditFileKey  = "audit-file"
-	flagAuditURLKey   = "audit-url"
-	flagCryptoKeyKey  = "crypto-key"
-	flagConfigPathKey = "config"
+	flagAddrKey          = "a"
+	flagStoreIntKey      = "i"
+	flagStorePathKey     = "f"
+	flagRestoreKey       = "r"
+	flagDsnKey           = "d"
+	flagSignKeyKey       = "k"
+	flagAuditFileKey     = "audit-file"
+	flagAuditURLKey      = "audit-url"
+	flagCryptoKeyKey     = "crypto-key"
+	flagConfigPathKey    = "config"
+	flagTrustedSubnetKey = "t"
 
-	envAddrKey       = "ADDRESS"
-	envStoreIntKey   = "STORE_INTERVAL"
-	envStorePathKey  = "FILE_STORAGE_PATH"
-	envRestoreKey    = "RESTORE"
-	envDsnKey        = "DATABASE_DSN"
-	envSignKeyKey    = "KEY"
-	envAuditFileKey  = "AUDIT_FILE"
-	envAuditURLKey   = "AUDIT_URL"
-	envCryptoKeyKey  = "CRYPTO_KEY"
-	envConfigPathKey = "CONFIG"
+	envAddrKey          = "ADDRESS"
+	envStoreIntKey      = "STORE_INTERVAL"
+	envStorePathKey     = "FILE_STORAGE_PATH"
+	envRestoreKey       = "RESTORE"
+	envDsnKey           = "DATABASE_DSN"
+	envSignKeyKey       = "KEY"
+	envAuditFileKey     = "AUDIT_FILE"
+	envAuditURLKey      = "AUDIT_URL"
+	envCryptoKeyKey     = "CRYPTO_KEY"
+	envConfigPathKey    = "CONFIG"
+	envTrustedSubnetKey = "TRUSTED_SUBNET"
 )
 
 var (
-	flagAddr      string
-	flagStoreInt  uint
-	flagStorePath string
-	flagRestore   bool
-	flagDsn       string
-	flagSignKey   string
-	flagAuditFile string
-	flagAuditURL  string
-	flagCryptoKey string
+	flagAddr          string
+	flagStoreInt      uint
+	flagStorePath     string
+	flagRestore       bool
+	flagDsn           string
+	flagSignKey       string
+	flagAuditFile     string
+	flagAuditURL      string
+	flagCryptoKey     string
+	flagTrustedSubnet string
 )
 
 type config struct {
@@ -64,6 +68,7 @@ type config struct {
 	StoreFile     string `json:"store_file"`
 	DatabaseDsn   string `json:"database_dsn"`
 	CryptoKey     string `json:"crypto_key"`
+	TrustedSubnet string `json:"trusted_subnet"`
 }
 
 func parseFlags(args []string) error {
@@ -109,6 +114,7 @@ func parseConfig(args []string) error {
 	flagStorePath = conf.StoreFile
 	flagDsn = conf.DatabaseDsn
 	flagCryptoKey = conf.CryptoKey
+	flagTrustedSubnet = conf.TrustedSubnet
 
 	val, err := time.ParseDuration(conf.StoreInterval)
 	if err != nil {
@@ -131,6 +137,7 @@ func parseArgs(args []string) error {
 	fs.StringVar(&flagAuditFile, flagAuditFileKey, flagAuditFileDefault, "audit file")
 	fs.StringVar(&flagAuditURL, flagAuditURLKey, flagAuditURLDefault, "audit remote service url")
 	fs.StringVar(&flagCryptoKey, flagCryptoKeyKey, flagCryptoKeyDefault, "crypto key file path")
+	fs.StringVar(&flagTrustedSubnet, flagTrustedSubnetKey, flagTrustedSubnetDefault, "trusted subnet mask")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -185,6 +192,10 @@ func parseEnv() error {
 
 	if envCryptoKey, ok := os.LookupEnv(envCryptoKeyKey); ok {
 		flagCryptoKey = envCryptoKey
+	}
+
+	if envTrustedSubnet, ok := os.LookupEnv(envTrustedSubnetKey); ok {
+		flagTrustedSubnet = envTrustedSubnet
 	}
 
 	return nil

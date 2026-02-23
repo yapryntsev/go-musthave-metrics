@@ -166,6 +166,7 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger(log))
+	r.Use(middleware.Subnet(flagTrustedSubnet, log))
 	r.Use(middleware.SignBody(flagSignKey, log))
 	r.Use(middleware.Compress(log))
 	r.Use(middleware.Decryptor(privateKey, log))

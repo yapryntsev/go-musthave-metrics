@@ -65,10 +65,10 @@ func (x Metric_MType) Number() protoreflect.EnumNumber {
 // Metric определяет единичную метрику.
 type Metric struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id    *string      `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	xxx_hidden_Type  Metric_MType `protobuf:"varint,2,opt,name=type,enum=metrics.Metric_MType" json:"type,omitempty"`
-	xxx_hidden_Delta int64        `protobuf:"varint,3,opt,name=delta" json:"delta,omitempty"`
-	xxx_hidden_Value       float64                `protobuf:"fixed64,4,opt,name=value" json:"value,omitempty"`
+	xxx_hidden_Id    *string      `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Type  Metric_MType `protobuf:"varint,2,opt,name=type,enum=metrics.Metric_MType"`
+	xxx_hidden_Delta int64        `protobuf:"varint,3,opt,name=delta"`
+	xxx_hidden_Value       float64                `protobuf:"fixed64,4,opt,name=value"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -238,7 +238,7 @@ func (b0 Metric_builder) Build() *Metric {
 // UpdateMetricsRequest содержит список метрик для обновления.
 type UpdateMetricsRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Metrics *[]*Metric             `protobuf:"bytes,1,rep,name=metrics" json:"metrics,omitempty"`
+	xxx_hidden_Metrics *[]*Metric             `protobuf:"bytes,1,rep,name=metrics"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }

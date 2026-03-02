@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,11 +19,15 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/yapryntsev/go-musthave-metrics/internal/handler"
+	grpcSrv "github.com/yapryntsev/go-musthave-metrics/internal/handler/grpc"
 	"github.com/yapryntsev/go-musthave-metrics/internal/middleware"
+	grpcMdl "github.com/yapryntsev/go-musthave-metrics/internal/middleware/grpc"
+	pb "github.com/yapryntsev/go-musthave-metrics/internal/proto"
 	"github.com/yapryntsev/go-musthave-metrics/internal/repository"
 	"github.com/yapryntsev/go-musthave-metrics/internal/service"
 	"github.com/yapryntsev/go-musthave-metrics/internal/service/audit"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 var log *zap.Logger
@@ -51,14 +56,33 @@ func main() {
 	)
 
 	db := configureDB(ctx, log)
-	server := configureServer(flagAddr, db, log)
+	svc := configureService(db, log)
+
+	var httpServer *http.Server
+	var grpcServer *grpc.Server
+
+	if flagPreferGRPC {
+		grpcServer = configureServerGRPC(svc, log)
+	} else {
+		httpServer = configureServerHTTP(flagAddr, svc, log)
+	}
 
 	serverError := make(chan error, 1)
 
 	go func() {
 		log.Debug("server is running")
-		if err := server.ListenAndServe(); err != nil {
+
+		if flagPreferGRPC {
+			listen, err := net.Listen("tcp", flagAddr)
 			serverError <- err
+
+			if err := grpcServer.Serve(listen); err != nil {
+				serverError <- err
+			}
+		} else {
+			if err := httpServer.ListenAndServe(); err != nil {
+				serverError <- err
+			}
 		}
 	}()
 
@@ -77,8 +101,12 @@ func main() {
 	}()
 
 	defer func() {
-		if err := server.Shutdown(ctx); err != nil {
-			log.Error("failed to gracefully shutdown server with error", zap.Error(err))
+		if flagPreferGRPC {
+			grpcServer.Stop()
+		} else {
+			if err := httpServer.Shutdown(ctx); err != nil {
+				log.Error("failed to gracefully shutdown server with error", zap.Error(err))
+			}
 		}
 	}()
 
@@ -120,9 +148,7 @@ func configureDB(ctx context.Context, log *zap.Logger) *pgxpool.Pool {
 	return pool
 }
 
-func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Server {
-	log.Debug(fmt.Sprintf("server bootstrap, address: %s", addr))
-
+func configureService(db *pgxpool.Pool, log *zap.Logger) *service.Service {
 	metricRepo := repository.New(
 		db,
 		time.Duration(flagStoreInt),
@@ -130,8 +156,20 @@ func configureServer(addr string, db *pgxpool.Pool, log *zap.Logger) *http.Serve
 		flagRestore,
 		log,
 	)
-	metricService := service.New(metricRepo, db)
-	metricHandler := handler.New(metricService, log)
+
+	return service.New(metricRepo, db)
+}
+
+func configureServerGRPC(svc service.MetricService, logger *zap.Logger) *grpc.Server {
+	server := grpc.NewServer(grpc.UnaryInterceptor(grpcMdl.SubnetInterceptor(flagTrustedSubnet, logger)))
+	pb.RegisterMetricsServer(server, grpcSrv.NewServer(svc, logger))
+
+	return server
+}
+
+func configureServerHTTP(addr string, svc service.MetricService, log *zap.Logger) *http.Server {
+	log.Debug(fmt.Sprintf("server bootstrap, address: %s", addr))
+	metricHandler := handler.New(svc, log)
 
 	if flagAuditFile != "" {
 		auditor, err := audit.NewLocalAuditor(flagAuditFile, log)

@@ -20,12 +20,15 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/meminfo"
+	"github.com/go-resty/resty/v2"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/yapryntsev/go-musthave-metrics/internal/middleware"
-	"golang.org/x/sync/errgroup"
-
-	"github.com/go-resty/resty/v2"
 	models "github.com/yapryntsev/go-musthave-metrics/internal/model"
+	pb "github.com/yapryntsev/go-musthave-metrics/internal/proto"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
+
 	"go.uber.org/zap"
 )
 
@@ -35,7 +38,8 @@ type Agent struct {
 	addr           string
 	stats          *runtime.MemStats
 	log            *zap.Logger
-	client         *resty.Client
+	httpClient     *resty.Client
+	grpcClient     pb.MetricsClient
 	reportInterval uint
 	pollInterval   uint
 	signKey        string
@@ -55,6 +59,7 @@ func New(
 	reportInterval uint,
 	pollInterval uint,
 	signKey string,
+	grpcClient pb.MetricsClient,
 	cert *x509.Certificate,
 	log *zap.Logger,
 ) *Agent {
@@ -74,7 +79,8 @@ func New(
 		addr:           addr,
 		stats:          &runtime.MemStats{},
 		log:            log,
-		client:         restyClient,
+		httpClient:     restyClient,
+		grpcClient:     grpcClient,
 		reportInterval: reportInterval,
 		pollInterval:   pollInterval,
 		signKey:        signKey,
@@ -182,8 +188,14 @@ func (a *Agent) sendMetrics(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			batch := a.makeMetricsBatch()
-			err := a.sendBatch(ctx, batch)
+			var err error
+			if a.grpcClient != nil {
+				batch := a.makeMetricsGRPCBatch()
+				err = a.sendBatchGRPC(ctx, batch)
+			} else {
+				batch := a.makeMetricsBatch()
+				err = a.sendBatch(ctx, batch)
+			}
 			if err != nil {
 				return fmt.Errorf("failed to send metrics batch: %w", err)
 			}
@@ -271,7 +283,98 @@ func (a *Agent) makeMetricsBatch() []models.Metrics {
 	return metrics
 }
 
-// sendBatch executes an HTTP request that delivers a metrics batch to the server.
+func (a *Agent) makeMetricsGRPCBatch() []*pb.Metric {
+	a.mu.RLock()
+	stats := a.stats
+	a.mu.RUnlock()
+
+	alloc := float64(stats.Alloc)
+	bhs := float64(stats.BuckHashSys)
+	frees := float64(stats.Frees)
+	gccpf := stats.GCCPUFraction
+	gcys := float64(stats.GCSys)
+	ha := float64(stats.HeapAlloc)
+	hid := float64(stats.HeapIdle)
+	hin := float64(stats.HeapInuse)
+	hob := float64(stats.HeapObjects)
+	hre := float64(stats.HeapReleased)
+	hsy := float64(stats.HeapSys)
+	lgc := float64(stats.LastGC)
+	lup := float64(stats.Lookups)
+	mci := float64(stats.MCacheInuse)
+	mcs := float64(stats.MCacheSys)
+	msi := float64(stats.MSpanInuse)
+	mss := float64(stats.MSpanSys)
+	mll := float64(stats.Mallocs)
+	ngc := float64(stats.NextGC)
+	nfg := float64(stats.NumForcedGC)
+	nugc := float64(stats.NumGC)
+	oss := float64(stats.OtherSys)
+	ptn := float64(stats.PauseTotalNs)
+	si := float64(stats.StackInuse)
+	ss := float64(stats.StackSys)
+	sys := float64(stats.Sys)
+	ta := float64(stats.TotalAlloc)
+	pc := int64(a.pollCount)
+	memTotal := float64(a.memTotal)
+	memFree := float64(a.memFree)
+
+	gauge := pb.Metric_GAUGE
+	counter := pb.Metric_COUNTER
+
+	buildes := []pb.Metric_builder{
+		{Id: proto.String("RandomValue"), Type: &gauge, Value: &a.randValue},
+		{Id: proto.String("Alloc"), Type: &gauge, Value: &alloc},
+		{Id: proto.String("BuckHashSys"), Type: &gauge, Value: &bhs},
+		{Id: proto.String("Frees"), Type: &gauge, Value: &frees},
+		{Id: proto.String("GCCPUFraction"), Type: &gauge, Value: &gccpf},
+		{Id: proto.String("GCSys"), Type: &gauge, Value: &gcys},
+		{Id: proto.String("HeapAlloc"), Type: &gauge, Value: &ha},
+		{Id: proto.String("HeapIdle"), Type: &gauge, Value: &hid},
+		{Id: proto.String("HeapInuse"), Type: &gauge, Value: &hin},
+		{Id: proto.String("HeapObjects"), Type: &gauge, Value: &hob},
+		{Id: proto.String("HeapReleased"), Type: &gauge, Value: &hre},
+		{Id: proto.String("HeapSys"), Type: &gauge, Value: &hsy},
+		{Id: proto.String("LastGC"), Type: &gauge, Value: &lgc},
+		{Id: proto.String("Lookups"), Type: &gauge, Value: &lup},
+		{Id: proto.String("MCacheInuse"), Type: &gauge, Value: &mci},
+		{Id: proto.String("MCacheSys"), Type: &gauge, Value: &mcs},
+		{Id: proto.String("MSpanInuse"), Type: &gauge, Value: &msi},
+		{Id: proto.String("MSpanSys"), Type: &gauge, Value: &mss},
+		{Id: proto.String("Mallocs"), Type: &gauge, Value: &mll},
+		{Id: proto.String("NextGC"), Type: &gauge, Value: &ngc},
+		{Id: proto.String("NumForcedGC"), Type: &gauge, Value: &nfg},
+		{Id: proto.String("NumGC"), Type: &gauge, Value: &nugc},
+		{Id: proto.String("OtherSys"), Type: &gauge, Value: &oss},
+		{Id: proto.String("PauseTotalNs"), Type: &gauge, Value: &ptn},
+		{Id: proto.String("StackInuse"), Type: &gauge, Value: &si},
+		{Id: proto.String("StackSys"), Type: &gauge, Value: &ss},
+		{Id: proto.String("Sys"), Type: &gauge, Value: &sys},
+		{Id: proto.String("TotalAlloc"), Type: &gauge, Value: &ta},
+		{Id: proto.String("PollCount"), Type: &counter, Delta: &pc},
+		{Id: proto.String("TotalMemory"), Type: &gauge, Value: &memTotal},
+		{Id: proto.String("FreeMemory"), Type: &gauge, Value: &memFree},
+	}
+
+	for i, v := range a.cpuUtilization {
+		vCopy := v
+		m := pb.Metric_builder{
+			Id:    proto.String(fmt.Sprintf("CPUutilization%d", i+1)),
+			Type:  &gauge,
+			Value: &vCopy,
+		}
+		buildes = append(buildes, m)
+	}
+
+	metrics := make([]*pb.Metric, len(buildes))
+	for i, v := range buildes {
+		metrics[i] = v.Build()
+	}
+
+	return metrics
+}
+
+// sendBatch executes an Agent request that delivers a metrics batch to the server.
 func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 	if len(a.addr) == 0 {
 		return errors.New("host must be configured")
@@ -294,7 +397,7 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 		return err
 	}
 
-	req := a.client.R().
+	req := a.httpClient.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
@@ -333,6 +436,37 @@ func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
 	if resp.StatusCode() != http.StatusOK {
 		a.log.Error("unexpected status code", zap.Int("code", resp.StatusCode()))
 	}
+
+	return nil
+}
+
+func (a *Agent) sendBatchGRPC(ctx context.Context, metrics []*pb.Metric) error {
+	host, _, err := net.SplitHostPort(a.addr)
+	if err != nil {
+		return err
+	}
+
+	md := metadata.New(
+		map[string]string{
+			"x-real-ip": host,
+		},
+	)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	req := pb.UpdateMetricsRequest_builder{Metrics: metrics}
+	resp, err := a.grpcClient.UpdateMetrics(ctx, req.Build())
+
+	if err != nil {
+		a.log.Error("failed to send metrics", zap.Error(err))
+		return nil
+	}
+
+	if resp == nil {
+		a.log.Error("failed to send metrics")
+		return nil
+	}
+
+	a.log.Debug("metrics sent")
 
 	return nil
 }

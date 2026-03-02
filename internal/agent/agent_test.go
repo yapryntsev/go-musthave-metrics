@@ -7,7 +7,7 @@ import (
 )
 
 func BenchmarkAgent_fetchMetrics(b *testing.B) {
-	agent := New("localhost:8080", 2, 1, "key", nil, zaptest.NewLogger(b))
+	agent := New("localhost:8080", 2, 1, "key", nil, nil, zaptest.NewLogger(b))
 
 	for b.Loop() {
 		_ = agent.makeMetricsBatch()

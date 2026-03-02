@@ -22,6 +22,7 @@ const (
 	flagCryptoKeyDefault     = ""
 	flagConfigPathDefault    = ""
 	flagTrustedSubnetDefault = ""
+	flagPreferGRPCDefault    = false
 
 	flagAddrKey          = "a"
 	flagStoreIntKey      = "i"
@@ -34,18 +35,20 @@ const (
 	flagCryptoKeyKey     = "crypto-key"
 	flagConfigPathKey    = "config"
 	flagTrustedSubnetKey = "t"
+	flagPreferGRPCKey    = "g"
 
-	envAddrKey          = "ADDRESS"
-	envStoreIntKey      = "STORE_INTERVAL"
-	envStorePathKey     = "FILE_STORAGE_PATH"
-	envRestoreKey       = "RESTORE"
-	envDsnKey           = "DATABASE_DSN"
-	envSignKeyKey       = "KEY"
-	envAuditFileKey     = "AUDIT_FILE"
-	envAuditURLKey      = "AUDIT_URL"
-	envCryptoKeyKey     = "CRYPTO_KEY"
-	envConfigPathKey    = "CONFIG"
-	envTrustedSubnetKey = "TRUSTED_SUBNET"
+	envAddrKey           = "ADDRESS"
+	envStoreIntKey       = "STORE_INTERVAL"
+	envStorePathKey      = "FILE_STORAGE_PATH"
+	envRestoreKey        = "RESTORE"
+	envDsnKey            = "DATABASE_DSN"
+	envSignKeyKey        = "KEY"
+	envAuditFileKey      = "AUDIT_FILE"
+	envAuditURLKey       = "AUDIT_URL"
+	envCryptoKeyKey      = "CRYPTO_KEY"
+	envConfigPathKey     = "CONFIG"
+	envTrustedSubnetKey  = "TRUSTED_SUBNET"
+	envFlagPreferGRPCKey = "PREFER_GRPC"
 )
 
 var (
@@ -59,6 +62,7 @@ var (
 	flagAuditURL      string
 	flagCryptoKey     string
 	flagTrustedSubnet string
+	flagPreferGRPC    bool
 )
 
 type config struct {
@@ -69,6 +73,7 @@ type config struct {
 	DatabaseDsn   string `json:"database_dsn"`
 	CryptoKey     string `json:"crypto_key"`
 	TrustedSubnet string `json:"trusted_subnet"`
+	PreferGRPC    bool   `json:"prefer_grpc"`
 }
 
 func parseFlags(args []string) error {
@@ -115,6 +120,7 @@ func parseConfig(args []string) error {
 	flagDsn = conf.DatabaseDsn
 	flagCryptoKey = conf.CryptoKey
 	flagTrustedSubnet = conf.TrustedSubnet
+	flagPreferGRPC = conf.PreferGRPC
 
 	val, err := time.ParseDuration(conf.StoreInterval)
 	if err != nil {
@@ -138,6 +144,7 @@ func parseArgs(args []string) error {
 	fs.StringVar(&flagAuditURL, flagAuditURLKey, flagAuditURLDefault, "audit remote service url")
 	fs.StringVar(&flagCryptoKey, flagCryptoKeyKey, flagCryptoKeyDefault, "crypto key file path")
 	fs.StringVar(&flagTrustedSubnet, flagTrustedSubnetKey, flagTrustedSubnetDefault, "trusted subnet mask")
+	fs.BoolVar(&flagPreferGRPC, flagPreferGRPCKey, flagPreferGRPCDefault, "should choose grpc over http")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -196,6 +203,15 @@ func parseEnv() error {
 
 	if envTrustedSubnet, ok := os.LookupEnv(envTrustedSubnetKey); ok {
 		flagTrustedSubnet = envTrustedSubnet
+	}
+
+	if envPreferGRPC, ok := os.LookupEnv(envFlagPreferGRPCKey); ok {
+		b, err := strconv.ParseBool(envPreferGRPC)
+		if err != nil {
+			return fmt.Errorf("failed to parse env value: %s", envFlagPreferGRPCKey)
+		}
+
+		flagPreferGRPC = b
 	}
 
 	return nil

@@ -12,8 +12,11 @@ import (
 	"syscall"
 
 	"github.com/yapryntsev/go-musthave-metrics/internal/agent"
+	pb "github.com/yapryntsev/go-musthave-metrics/internal/proto"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var buildVersion string = "N/A"
@@ -35,7 +38,7 @@ func main() {
 		l.Fatal("failed to launch app instance", zap.Error(err))
 	}
 
-	appAgent := configureAgent(l)
+	appAgent := configureHTTPAgent(l)
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGTERM,
@@ -59,7 +62,7 @@ func main() {
 	cancel()
 }
 
-func configureAgent(l *zap.Logger) *agent.Agent {
+func configureHTTPAgent(l *zap.Logger) *agent.Agent {
 	l.Debug("agent bootstrap")
 
 	cert, err := fetchCert()
@@ -67,7 +70,18 @@ func configureAgent(l *zap.Logger) *agent.Agent {
 		l.Fatal("failed to fetch cert", zap.Error(err))
 	}
 
-	return agent.New(flagAddr, flagReportInt, flagPollInt, flagSignKey, cert, l)
+	var client pb.MetricsClient
+	if flagPreferGRPC {
+		conn, err := grpc.NewClient(flagAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			l.Fatal("failed to initiate grpc client", zap.Error(err))
+		}
+		defer conn.Close()
+
+		client = pb.NewMetricsClient(conn)
+	}
+
+	return agent.New(flagAddr, flagReportInt, flagPollInt, flagSignKey, client, cert, l)
 }
 
 func fetchCert() (*x509.Certificate, error) {

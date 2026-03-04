@@ -16,7 +16,7 @@ func Example() {
 		panic("failed to initiate logger")
 	}
 
-	agent := New("localhost:8080", reportInterval, pollInterval, signKey, nil, log)
+	agent := New("localhost:8080", reportInterval, pollInterval, signKey, nil, nil, log)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

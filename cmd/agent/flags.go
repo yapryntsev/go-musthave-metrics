@@ -17,6 +17,7 @@ const (
 	flagSignKeyDefault    = ""
 	flagCryptoKeyDefault  = ""
 	flagConfigPathDefault = ""
+	flagPreferGRPCDefault = false
 
 	flagAddrKey       = "a"
 	flagReportIntKey  = "r"
@@ -24,21 +25,24 @@ const (
 	flagSignKeyKey    = "k"
 	flagCryptoKeyKey  = "crypto-key"
 	flagConfigPathKey = "config"
+	flagPreferGRPCKey = "g"
 
-	envAddrKey       = "ADDRESS"
-	envReportIntKey  = "REPORT_INTERVAL"
-	envPollIntKey    = "POLL_INTERVAL"
-	envSignKeyKey    = "KEY"
-	envCryptoKeyKey  = "CRYPTO_KEY"
-	envConfigPathKey = "CONFIG"
+	envAddrKey           = "ADDRESS"
+	envReportIntKey      = "REPORT_INTERVAL"
+	envPollIntKey        = "POLL_INTERVAL"
+	envSignKeyKey        = "KEY"
+	envCryptoKeyKey      = "CRYPTO_KEY"
+	envConfigPathKey     = "CONFIG"
+	envFlagPreferGRPCKey = "PREFER_GRPC"
 )
 
 var (
-	flagAddr      string
-	flagReportInt uint
-	flagPollInt   uint
-	flagSignKey   string
-	flagCryptoKey string
+	flagAddr       string
+	flagReportInt  uint
+	flagPollInt    uint
+	flagSignKey    string
+	flagCryptoKey  string
+	flagPreferGRPC bool
 )
 
 type config struct {
@@ -46,6 +50,7 @@ type config struct {
 	ReportInterval string `json:"report_interval"`
 	PollInterval   string `json:"poll_interval"`
 	CryptoKey      string `json:"crypto_key"`
+	PreferGRPC     bool   `json:"prefer_grpc"`
 }
 
 func parseFlags(args []string) error {
@@ -88,6 +93,7 @@ func parseConfig(args []string) error {
 
 	flagAddr = conf.Address
 	flagCryptoKey = conf.CryptoKey
+	flagPreferGRPC = conf.PreferGRPC
 
 	val, err := time.ParseDuration(conf.ReportInterval)
 	if err != nil {
@@ -117,6 +123,7 @@ func parseArgs(args []string) error {
 		flagReportIntDefault,
 		`frequency of sending metrics to the server in sec`,
 	)
+	fs.BoolVar(&flagPreferGRPC, flagPreferGRPCKey, flagPreferGRPCDefault, "should choose grpc over http")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -155,6 +162,15 @@ func parseEnv() error {
 
 	if envCryptoKey, ok := os.LookupEnv(envCryptoKeyKey); ok {
 		flagCryptoKey = envCryptoKey
+	}
+
+	if envPreferGRPC, ok := os.LookupEnv(envFlagPreferGRPCKey); ok {
+		b, err := strconv.ParseBool(envPreferGRPC)
+		if err != nil {
+			return fmt.Errorf("failed to parse env value: %s", envFlagPreferGRPCKey)
+		}
+
+		flagPreferGRPC = b
 	}
 
 	return nil
